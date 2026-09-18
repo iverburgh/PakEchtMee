@@ -1,0 +1,77 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+[*.{json,yml,yaml,md,ts,tsx,js,jsx,css}]
+indent_size = 2
+
+[*.{csproj,props,targets}]
+indent_size = 2
+
+# EF Core scaffolds these files; they are not hand-written and must not fail the build on style rules.
+[**/Migrations/*.cs]
+generated_code = true
+dotnet_analyzer_diagnostic.severity = none
+dotnet_diagnostic.IDE0005.severity = none
+dotnet_diagnostic.IDE0161.severity = none
+dotnet_diagnostic.CA1861.severity = none
+
+[*.cs]
+# Namespaces and usings
+csharp_style_namespace_declarations = file_scoped:error
+dotnet_sort_system_directives_first = true
+csharp_using_directive_placement = outside_namespace:error
+dotnet_diagnostic.IDE0005.severity = error
+
+# Braces: Allman, and no braces for single-line blocks
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_prefer_braces = when_multiline:suggestion
+
+# Modern C#
+csharp_style_prefer_primary_constructors = true:suggestion
+csharp_style_prefer_pattern_matching = true:suggestion
+csharp_style_prefer_switch_expression = true:suggestion
+csharp_style_prefer_not_pattern = true:suggestion
+csharp_style_prefer_is_null_check_over_reference_equality_method = true:error
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+dotnet_style_prefer_collection_expression = true:suggestion
+dotnet_style_namespace_match_folder = true:suggestion
+
+# nameof over string literals
+dotnet_diagnostic.CA2208.severity = warning
+
+# Naming: private fields camelCase
+dotnet_naming_rule.private_fields_camel_case.symbols = private_fields
+dotnet_naming_rule.private_fields_camel_case.style = camel_case
+dotnet_naming_rule.private_fields_camel_case.severity = warning
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.camel_case.capitalization = camel_case
+
+# Naming: interfaces prefixed with I
+dotnet_naming_rule.interfaces_start_with_i.symbols = interfaces
+dotnet_naming_rule.interfaces_start_with_i.style = i_prefix
+dotnet_naming_rule.interfaces_start_with_i.severity = error
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_style.i_prefix.required_prefix = I
+dotnet_naming_style.i_prefix.capitalization = pascal_case
+
+# Public members PascalCase
+dotnet_naming_rule.public_members_pascal_case.symbols = public_members
+dotnet_naming_rule.public_members_pascal_case.style = pascal_case
+dotnet_naming_rule.public_members_pascal_case.severity = warning
+dotnet_naming_symbols.public_members.applicable_kinds = property, method, event, class, struct, enum, delegate
+dotnet_naming_symbols.public_members.applicable_accessibilities = public
+dotnet_naming_style.pascal_case.capitalization = pascal_case

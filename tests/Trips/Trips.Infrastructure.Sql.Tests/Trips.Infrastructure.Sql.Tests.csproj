@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Trips\Trips.Infrastructure.Sql\Trips.Infrastructure.Sql.csproj" />
+    <ProjectReference Include="..\..\Shared\Shared.Tests\Shared.Tests.csproj" />
+  </ItemGroup>
+
+</Project>

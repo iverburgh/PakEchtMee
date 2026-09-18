@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <UserSecretsId>pakechtmee-web</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Catalog\Catalog.Application\Catalog.Application.csproj" />
+    <ProjectReference Include="..\Catalog\Catalog.Infrastructure.Sql\Catalog.Infrastructure.Sql.csproj" />
+    <ProjectReference Include="..\ServiceDefaults\ServiceDefaults.csproj" />
+    <ProjectReference Include="..\Trips\Trips.Application\Trips.Application.csproj" />
+    <ProjectReference Include="..\Trips\Trips.Infrastructure.Sql\Trips.Infrastructure.Sql.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Web.Tests" />
+  </ItemGroup>
+
+</Project>
