@@ -8,16 +8,9 @@ import type {
   TripItem,
 } from "@/lib/types";
 
-/**
- * Aspire injects the API address as `services__web__http__0`; the fallback keeps a bare
- * `npm run dev` working against a locally started API.
- */
+/** Aspire sets `API_BASE_URL`; the fallback keeps a bare `npm run dev` working against a locally started API. */
 function baseUrl(): string {
-  const url =
-    process.env.services__web__https__0 ??
-    process.env.services__web__http__0 ??
-    process.env.API_BASE_URL ??
-    "http://localhost:5080";
+  const url = process.env.API_BASE_URL ?? "http://localhost:5080";
 
   return url.replace(/\/$/, "");
 }

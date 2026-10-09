@@ -9,11 +9,30 @@ var sql = builder.AddSqlServer("sql", sqlPassword)
 
 var database = sql.AddDatabase("pakechtmee");
 
-// A fixed, unproxied port so the Next.js dev server has a stable API address to talk to.
-builder.AddProject<Projects.Web>("web")
+// The fixed, unproxied port also lets a Next.js dev server started outside Aspire reach the API.
+var api = builder.AddProject<Projects.Web>("api")
     .WithReference(database)
     .WaitFor(database)
     .WithHttpEndpoint(port: 5080, name: "api", isProxied: false)
-    .WithHttpHealthCheck("/health");
+    .WithHttpHealthCheck("/health")
+    // The API has nothing on "/", so the dashboard links point at pages that actually respond.
+    .WithUrlForEndpoint("api", url =>
+    {
+        url.Url = "/openapi/v1.json";
+        url.DisplayText = "OpenAPI";
+    })
+    .WithUrlForEndpoint("http", url =>
+    {
+        url.Url = "/health";
+        url.DisplayText = "Health";
+    })
+    .WithUrlForEndpoint("https", url => url.DisplayLocation = UrlDisplayLocation.DetailsOnly);
+
+// AddNextJsApp is still experimental; the stable JavaScript app runs `npm run dev`, and Next.js reads PORT.
+builder.AddJavaScriptApp("frontend", "../web-client")
+    .WithHttpEndpoint(env: "PORT")
+    .WithEnvironment("API_BASE_URL", api.GetEndpoint("api"))
+    .WaitFor(api)
+    .WithExternalHttpEndpoints();
 
 builder.Build().Run();
