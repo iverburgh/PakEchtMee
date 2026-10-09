@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { ActionResult } from "@/lib/actions";
+import { callAction } from "@/lib/call-action";
 import type { CatalogItem, Category } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -27,7 +28,7 @@ export function MoveItemDialog({
 
   const submit = () =>
     startTransition(async () => {
-      const result = await onSubmit(target);
+      const result = await callAction(() => onSubmit(target));
 
       if (!result.ok) {
         toast.error(result.error);

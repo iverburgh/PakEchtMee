@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { api } from "@/lib/api";
+import { orNotFound } from "@/lib/or-not-found";
 import { CategoryPicker } from "@/components/trips/category-picker";
 
 export default async function TripCategoriesPage({ params }: PageProps<"/trips/[tripId]/categorieen">) {
   const { tripId } = await params;
-  const [trip, categories] = await Promise.all([api.getTrip(tripId), api.listCategories()]);
+  const [trip, categories] = await Promise.all([orNotFound(api.getTrip(tripId)), api.listCategories()]);
 
   return (
     <>

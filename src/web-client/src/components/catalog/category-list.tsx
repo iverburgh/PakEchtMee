@@ -11,7 +11,9 @@ import {
   removeCategoryAction,
   renameCategoryAction,
   restoreCategoryAction,
+  type ActionResult,
 } from "@/lib/actions";
+import { callAction } from "@/lib/call-action";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -32,9 +34,9 @@ export function CategoryList({ categories }: { categories: Category[] }) {
   const live = categories.filter((category) => !category.isDeleted);
   const removed = categories.filter((category) => category.isDeleted);
 
-  const runAction = (action: () => Promise<{ ok: boolean; error?: string }>, success: string) =>
+  const runAction = (action: () => Promise<ActionResult<unknown>>, success: string) =>
     startTransition(async () => {
-      const result = await action();
+      const result = await callAction(action);
 
       if (!result.ok) {
         toast.error(result.error);
@@ -79,13 +81,13 @@ export function CategoryList({ categories }: { categories: Category[] }) {
                   <MoreVertical aria-hidden />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onSelect={() => setRenaming(category)}>
+                  <DropdownMenuItem onClick={() => setRenaming(category)}>
                     <Pencil aria-hidden />
                     Hernoemen
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     variant="destructive"
-                    onSelect={() => runAction(() => removeCategoryAction(category.id), "Categorie verwijderd.")}
+                    onClick={() => runAction(() => removeCategoryAction(category.id), "Categorie verwijderd.")}
                   >
                     <Trash2 aria-hidden />
                     Verwijderen

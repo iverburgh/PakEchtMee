@@ -37,7 +37,12 @@ public sealed record TripDetailsDto(
             trip.Dates.Start,
             trip.Dates.End,
             [.. trip.Categories.Select(category => new TripCategoryDto(category.CategoryId, category.Name, trip.HasProgressedItemsIn(category.CategoryId)))],
-            [.. trip.Items.Select(TripItemDto.From).Where(filter.Matches)],
+            // The database returns items in no particular order; a stable, readable order makes the list walkable.
+            [.. trip.Items
+                .OrderBy(item => item.CategoryName, StringComparer.CurrentCultureIgnoreCase)
+                .ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
+                .Select(TripItemDto.From)
+                .Where(filter.Matches)],
             TripProgressDto.From(trip.Progress()));
     }
 }

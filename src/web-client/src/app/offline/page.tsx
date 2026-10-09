@@ -1,4 +1,5 @@
 import { CloudOff } from "lucide-react";
+import { RetryButton } from "@/components/retry-button";
 
 export const metadata = { title: "Geen verbinding - PakEchtMee" };
 
@@ -10,6 +11,7 @@ export default function OfflinePage() {
       <p className="text-muted-foreground max-w-sm text-sm">
         PakEchtMee is geopend, maar je paklijst staat online. Zodra je weer verbinding hebt, kun je verder.
       </p>
+      <RetryButton />
     </main>
   );
 }

@@ -152,6 +152,22 @@ public sealed class TripHandlerTests
     }
 
     [Fact]
+    public async Task Items_are_returned_sorted_by_category_and_then_by_name()
+    {
+        Trip trip = harness.GivenTrip();
+        trip.SelectCategories(
+        [
+            new CategorySelection(Guid.CreateVersion7(), "Toiletspullen", [new CatalogItemSnapshot(Guid.CreateVersion7(), "Tandpasta", null, null), new CatalogItemSnapshot(Guid.CreateVersion7(), "Shampoo", null, null)]),
+            new CategorySelection(Guid.CreateVersion7(), "Elektronica", [new CatalogItemSnapshot(Guid.CreateVersion7(), "Oplader", null, null)]),
+        ]);
+
+        Result<TripDetailsDto, Exception> result = await harness.Mediator.Send(
+            new GetTripHandler.Query(trip.Id), TestContext.Current.CancellationToken);
+
+        result.Value.Items.Select(item => item.Name).ShouldBe(["Oplader", "Shampoo", "Tandpasta"]);
+    }
+
+    [Fact]
     public async Task A_category_with_progress_is_flagged_so_the_client_can_ask_for_confirmation()
     {
         Trip trip = harness.GivenTrip();

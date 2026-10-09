@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { api } from "@/lib/api";
+import { orNotFound } from "@/lib/or-not-found";
 import { describeAmount, statusLabels, type PackingStatus, type TripItem } from "@/lib/types";
 import { PrintButton } from "@/components/trips/print-button";
 
@@ -34,7 +35,7 @@ export default async function TripOverviewPage({
   const categoryIds = toArray(query.categoryId);
   const statuses = toArray(query.status) as PackingStatus[];
 
-  const trip = await api.getTrip(tripId);
+  const trip = await orNotFound(api.getTrip(tripId));
   const visible = trip.items.filter(
     (item) =>
       !item.isDeleted &&

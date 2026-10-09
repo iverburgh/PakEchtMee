@@ -12,7 +12,9 @@ import {
   removeItemAction,
   restoreItemAction,
   updateItemAction,
+  type ActionResult,
 } from "@/lib/actions";
+import { callAction } from "@/lib/call-action";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -43,9 +45,9 @@ export function ItemList({
   const live = items.filter((item) => !item.isDeleted);
   const removed = items.filter((item) => item.isDeleted);
 
-  const runAction = (action: () => Promise<{ ok: boolean; error?: string }>, success: string) =>
+  const runAction = (action: () => Promise<ActionResult<unknown>>, success: string) =>
     startTransition(async () => {
-      const result = await action();
+      const result = await callAction(action);
 
       if (!result.ok) {
         toast.error(result.error);
@@ -91,17 +93,17 @@ export function ItemList({
                     <MoreVertical aria-hidden />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onSelect={() => setEditing(item)}>
+                    <DropdownMenuItem onClick={() => setEditing(item)}>
                       <Pencil aria-hidden />
                       Bewerken
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => setMoving(item)}>
+                    <DropdownMenuItem onClick={() => setMoving(item)}>
                       <FolderInput aria-hidden />
                       Verplaatsen
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       variant="destructive"
-                      onSelect={() => runAction(() => removeItemAction(categoryId, item.id), "Item verwijderd.")}
+                      onClick={() => runAction(() => removeItemAction(categoryId, item.id), "Item verwijderd.")}
                     >
                       <Trash2 aria-hidden />
                       Verwijderen

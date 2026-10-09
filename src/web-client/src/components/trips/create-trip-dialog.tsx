@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { createTripAction } from "@/lib/actions";
+import { callAction } from "@/lib/call-action";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -52,11 +53,13 @@ export function CreateTripDialog() {
 
   const submit = (values: FormValues) =>
     startTransition(async () => {
-      const result = await createTripAction({
-        name: values.name,
-        startDate: values.startDate || null,
-        endDate: values.endDate || null,
-      });
+      const result = await callAction(() =>
+        createTripAction({
+          name: values.name,
+          startDate: values.startDate || null,
+          endDate: values.endDate || null,
+        }),
+      );
 
       if (!result.ok) {
         setError("name", { message: result.error });

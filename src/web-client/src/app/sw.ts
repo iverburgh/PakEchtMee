@@ -24,6 +24,13 @@ const serwist = new Serwist({
       matcher: ({ url }) => url.pathname.startsWith("/api"),
       handler: new NetworkOnly(),
     },
+    {
+      // Pages and RSC payloads carry server-rendered packing data, so they are never answered from cache;
+      // offline, navigations fall through to the /offline fallback instead of showing an outdated list.
+      matcher: ({ request, url }) =>
+        request.mode === "navigate" || request.headers.get("RSC") === "1" || url.searchParams.has("_rsc"),
+      handler: new NetworkOnly(),
+    },
     ...defaultCache,
   ],
   fallbacks: {
@@ -37,3 +44,10 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+// Sent by the "Vernieuwen" action in the update prompt; activation only happens when the user asks for it.
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    void self.skipWaiting();
+  }
+});

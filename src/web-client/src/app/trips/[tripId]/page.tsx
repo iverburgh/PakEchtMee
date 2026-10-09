@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { CalendarDays, ChevronLeft, Layers, Printer } from "lucide-react";
 import { api } from "@/lib/api";
+import { orNotFound } from "@/lib/or-not-found";
 import { Button } from "@/components/ui/button";
 import { TripWorkspace } from "@/components/trips/trip-workspace";
 
 export default async function TripPage({ params }: PageProps<"/trips/[tripId]">) {
   const { tripId } = await params;
-  const trip = await api.getTrip(tripId);
+  const trip = await orNotFound(api.getTrip(tripId));
 
   const range = [trip.startDate, trip.endDate]
     .filter((value): value is string => value !== null)

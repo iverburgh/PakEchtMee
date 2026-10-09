@@ -12,7 +12,9 @@ import {
   deleteTripItemAction,
   restoreTripItemAction,
   revertTripItemAction,
+  type ActionResult,
 } from "@/lib/actions";
+import { callAction } from "@/lib/call-action";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -66,17 +68,21 @@ export function TripWorkspace({ trip }: { trip: TripDetails }) {
 
   const change = (
     item: TripItem,
-    optimisticStatus: PackingStatus,
-    action: () => Promise<{ ok: boolean; error?: string }>,
+    optimisticStatus: PackingStatus | null,
+    action: () => Promise<ActionResult<TripItem>>,
     onSuccess?: () => void,
   ) =>
     startTransition(async () => {
-      patch({ itemId: item.id, status: optimisticStatus });
+      // When the resulting status is unknown up front (restoring a deleted item) we wait for the server instead.
+      if (optimisticStatus !== null) {
+        patch({ itemId: item.id, status: optimisticStatus });
+      }
 
-      const result = await action();
+      const result = await callAction(action);
 
+      // On failure the optimistic patch is discarded when the transition ends, so the item visibly returns.
       if (!result.ok) {
-        toast.error(result.error ?? "De wijziging is niet opgeslagen.");
+        toast.error(result.error);
 
         return;
       }
@@ -91,28 +97,34 @@ export function TripWorkspace({ trip }: { trip: TripDetails }) {
       return;
     }
 
+    const before = item.status;
+
     change(item, next, () => advanceTripItemAction(trip.id, item.id), () =>
       toast.success(`${item.name}: ${statusLabels[next]}`, {
-        action: { label: "Ongedaan maken", onClick: () => revert(item) },
+        action: { label: "Ongedaan maken", onClick: () => change(item, before, () => revertTripItemAction(trip.id, item.id)) },
       }),
     );
   };
 
   const revert = (item: TripItem) => {
-    const previous = item.previousStatus ?? "Active";
+    if (item.previousStatus === null) {
+      return;
+    }
 
-    change(item, previous, () => revertTripItemAction(trip.id, item.id));
+    change(item, item.previousStatus, () => revertTripItemAction(trip.id, item.id));
   };
 
-  const remove = (item: TripItem) =>
+  const remove = (item: TripItem) => {
+    const before = item.status;
+
     change(item, "Deleted", () => deleteTripItemAction(trip.id, item.id), () =>
       toast.success(`${item.name} verwijderd.`, {
-        action: { label: "Terugzetten", onClick: () => restore(item) },
+        action: { label: "Terugzetten", onClick: () => change(item, before, () => restoreTripItemAction(trip.id, item.id)) },
       }),
     );
+  };
 
-  const restore = (item: TripItem) =>
-    change(item, item.status, () => restoreTripItemAction(trip.id, item.id));
+  const restore = (item: TripItem) => change(item, null, () => restoreTripItemAction(trip.id, item.id));
 
   const toggleCategory = (categoryIds: string[]) => setFilter((current) => ({ ...current, categoryIds }));
   const toggleStatus = (statuses: string[]) =>
@@ -138,7 +150,11 @@ export function TripWorkspace({ trip }: { trip: TripDetails }) {
     <main className="flex flex-col gap-4 px-4">
       <section aria-label="Voortgang" className="flex flex-col gap-2">
         <div className="flex items-center gap-3">
-          <Progress value={progress.total === 0 ? 0 : (progress.loaded / progress.total) * 100} className="h-2 flex-1" />
+          <Progress
+            value={progress.total === 0 ? 0 : (progress.loaded / progress.total) * 100}
+            className="h-2 flex-1"
+            aria-label={`${progress.loaded} van ${progress.total} ingeladen`}
+          />
           <span className="text-sm font-medium tabular-nums">
             {progress.loaded}/{progress.total} ingeladen
           </span>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Category, TripCategory, TripDetails } from "@/lib/types";
 import { removeTripCategoryAction, selectTripCategoriesAction } from "@/lib/actions";
+import { callAction } from "@/lib/call-action";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,7 +50,7 @@ export function CategoryPicker({ trip, categories }: { trip: TripDetails; catego
 
   const removeCategory = (categoryId: string) =>
     startTransition(async () => {
-      const result = await removeTripCategoryAction(trip.id, categoryId);
+      const result = await callAction(() => removeTripCategoryAction(trip.id, categoryId));
 
       if (!result.ok) {
         toast.error(result.error);
@@ -64,7 +65,7 @@ export function CategoryPicker({ trip, categories }: { trip: TripDetails; catego
 
   const addSelected = () =>
     startTransition(async () => {
-      const result = await selectTripCategoriesAction(trip.id, pendingAdditions);
+      const result = await callAction(() => selectTripCategoriesAction(trip.id, pendingAdditions));
 
       if (!result.ok) {
         toast.error(result.error);

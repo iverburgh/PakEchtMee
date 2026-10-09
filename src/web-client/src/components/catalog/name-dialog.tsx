@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import type { ActionResult } from "@/lib/actions";
+import { callAction } from "@/lib/call-action";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -65,7 +66,7 @@ export function NameDialog({
 
   const submit = (values: FormValues) =>
     startTransition(async () => {
-      const result = await onSubmit(values.name);
+      const result = await callAction(() => onSubmit(values.name));
 
       if (!result.ok) {
         setError("name", { message: result.error });

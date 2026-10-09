@@ -1,9 +1,11 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-// No data volume: Aspire generates a new sa password whenever the container is recreated, and a
-// kept volume would still hold the old one. The container itself is persistent, so data survives restarts.
-var sql = builder.AddSqlServer("sql")
-    .WithLifetime(ContainerLifetime.Persistent);
+// A pinned password (user secret "Parameters:sql-password") keeps the persistent container and its volume valid across restarts.
+var sqlPassword = builder.AddParameter("sql-password", secret: true);
+
+var sql = builder.AddSqlServer("sql", sqlPassword)
+    .WithLifetime(ContainerLifetime.Persistent)
+    .WithDataVolume();
 
 var database = sql.AddDatabase("pakechtmee");
 

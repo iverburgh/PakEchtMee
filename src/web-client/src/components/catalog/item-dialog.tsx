@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import type { ActionResult } from "@/lib/actions";
+import { callAction } from "@/lib/call-action";
 import type { CatalogItem } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -76,11 +77,13 @@ export function ItemDialog({
 
   const submit = (values: FormValues) =>
     startTransition(async () => {
-      const result = await onSubmit({
-        name: values.name,
-        quantity: values.quantity === "" ? null : Number(values.quantity),
-        unit: values.unit === "" ? null : values.unit,
-      });
+      const result = await callAction(() =>
+        onSubmit({
+          name: values.name,
+          quantity: values.quantity === "" ? null : Number(values.quantity),
+          unit: values.unit === "" ? null : values.unit,
+        }),
+      );
 
       if (!result.ok) {
         setError("name", { message: result.error });

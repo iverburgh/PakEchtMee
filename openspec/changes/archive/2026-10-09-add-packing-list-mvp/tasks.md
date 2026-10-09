@@ -53,20 +53,20 @@
 
 - [x] 9.1 Scaffold the Next.js App Router client in `src/web-client` with TypeScript strict mode, Tailwind CSS v4, shadcn/ui, lucide-react and Sonner, and a typed API client reading the Aspire-provided base URL; verify `npm run build` and `npm run lint` succeed
 - [x] 9.2 Implement the mobile-first app shell: bottom navigation reachable one-handed, 44x44 CSS pixel minimum touch targets, no horizontal scrolling from 320 pixels, and `prefers-reduced-motion` honoured; verify the scenarios in `specs/pwa-shell/spec.md` at 320 and 768 pixel viewports
-- [ ] 9.3 Add `app/manifest.ts` with name, short name, start URL, `standalone` display, theme and background colours, and maskable 192 and 512 pixel icons; verify the browser offers installation and the installed app opens without address bar chrome
-- [ ] 9.4 Add Serwist with app-shell precaching, network-only for `/api`, and an update prompt instead of silent activation (design D10); verify launching offline renders the shell with an offline state and a retry action, and that retrying after reconnecting loads the data
-- [ ] 9.5 Add the global failure handling for mutations: revert to server state and show a Dutch error toast, never presenting an unsaved change as saved; verify an offline status change visibly reverts and toasts
+- [x] 9.3 Add `app/manifest.ts` with name, short name, start URL, `standalone` display, theme and background colours, and maskable 192 and 512 pixel icons; verify the browser offers installation and the installed app opens without address bar chrome
+- [x] 9.4 Add Serwist with app-shell precaching, network-only for `/api`, and an update prompt instead of silent activation (design D10); verify launching offline renders the shell with an offline state and a retry action, and that retrying after reconnecting loads the data
+- [x] 9.5 Add the global failure handling for mutations: revert to server state and show a Dutch error toast, never presenting an unsaved change as saved; verify an offline status change visibly reverts and toasts
 
 ## 10. Catalog screens
 
-- [ ] 10.1 Build the category screen (list, create, rename, remove, restore) with `react-hook-form` plus `zod` validation mirroring the server rules; verify the duplicate-name and empty-name rejections surface as inline field errors
-- [ ] 10.2 Build the item screen per category (create, rename, move, remove, restore) with optional quantity and unit, rendering "Socks 7 pair", "Towel 2" and "Passport" as specified; verify the display and validation scenarios in `specs/packing-catalog/spec.md`
+- [x] 10.1 Build the category screen (list, create, rename, remove, restore) with `react-hook-form` plus `zod` validation mirroring the server rules; verify the duplicate-name and empty-name rejections surface as inline field errors
+- [x] 10.2 Build the item screen per category (create, rename, move, remove, restore) with optional quantity and unit, rendering "Socks 7 pair", "Towel 2" and "Passport" as specified; verify the display and validation scenarios in `specs/packing-catalog/spec.md`
 
 ## 11. Trip and walkthrough screens
 
-- [ ] 11.1 Build the trip list and the create-trip form with optional dates and the end-not-before-start rule; verify upcoming and ongoing trips sort first and an invalid date range is rejected inline
-- [ ] 11.2 Build the category selection for a trip, generating the list and appending only missing items on re-add, with a confirmation dialog when removing a category whose items have progressed; verify the generation scenarios in `specs/trip-packing/spec.md`
-- [ ] 11.3 Build the walkthrough list where one tap advances an item through a Server Action with `useOptimistic`, no confirmation and no navigation, hiding the advance action on `Loaded` items and rendering affordances from the server-supplied allowed transitions; verify a tap updates in place, scroll position is preserved and a failed change reverts with a toast
+- [x] 11.1 Build the trip list and the create-trip form with optional dates and the end-not-before-start rule; verify upcoming and ongoing trips sort first and an invalid date range is rejected inline
+- [x] 11.2 Build the category selection for a trip, generating the list and appending only missing items on re-add, with a confirmation dialog when removing a category whose items have progressed; verify the generation scenarios in `specs/trip-packing/spec.md`
+- [x] 11.3 Build the walkthrough list where one tap advances an item through a Server Action with `useOptimistic`, no confirmation and no navigation, hiding the advance action on `Loaded` items and rendering affordances from the server-supplied allowed transitions; verify a tap updates in place, scroll position is preserved and a failed change reverts with a toast
 - [x] 11.4 Add the per-item undo calling `:revert` on that single item, and the delete/restore actions (design D8); verify undo after an advance affects only that item and survives a page refresh
 - [x] 11.5 Show the trip progress counts per status and the loaded share, excluding deleted items and updating immediately after each change; verify the progress scenarios in `specs/trip-packing/spec.md`
 
@@ -80,10 +80,10 @@
 
 - [x] 13.1 Build the full-screen overview at `/trips/[id]/overview` grouped by category showing name, amount, status and the per-status counts, excluding deleted items, with an empty state for a trip without items; verify the overview scenarios in `specs/packing-overview/spec.md`
 - [x] 13.2 Apply the active filters to the overview and state on the page which filters are applied; verify a filtered overview shows only matching items and names the filter
-- [ ] 13.3 Add the print layout with `print:` utilities, a checkbox per item, `break-inside-avoid` on category blocks, no interactive chrome, A4 portrait width and status legible without colour (design D9); verify the print preview scenarios, including a multi-page list
+- [x] 13.3 Add the print layout with `print:` utilities, a checkbox per item, `break-inside-avoid` on category blocks, no interactive chrome, A4 portrait width and status legible without colour (design D9); verify the print preview scenarios, including a multi-page list
 
 ## 14. End-to-end verification
 
-- [ ] 14.1 Run `dotnet test` for the full solution including the Testcontainers integration tests and confirm every test passes with Docker running
-- [ ] 14.2 Walk the primary journey against the AppHost on a 390 pixel viewport - create categories and items, create a trip, select categories, advance all items to `Loaded`, undo one, search, filter, open the overview and print - and confirm each spec scenario behaves as written
-- [ ] 14.3 Run a Lighthouse PWA and mobile audit on the built client and confirm the installability and app-shell requirements in `specs/pwa-shell/spec.md` are met
+- [x] 14.1 Run `dotnet test` for the full solution including the Testcontainers integration tests and confirm every test passes with Docker running
+- [x] 14.2 Walk the primary journey against the AppHost on a 390 pixel viewport - create categories and items, create a trip, select categories, advance all items to `Loaded`, undo one, search, filter, open the overview and print - and confirm each spec scenario behaves as written
+- [x] 14.3 Run a Lighthouse PWA and mobile audit on the built client and confirm the installability and app-shell requirements in `specs/pwa-shell/spec.md` are met
