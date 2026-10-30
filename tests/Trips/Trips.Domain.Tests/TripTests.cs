@@ -237,4 +237,18 @@ public sealed class TripTests
     [Fact]
     public void An_empty_trip_has_no_loaded_share()
         => ATrip().Progress().LoadedShare.ShouldBe(0d);
+
+    [Fact]
+    public void A_trip_created_with_an_id_keeps_that_id()
+    {
+        Guid id = Guid.CreateVersion7();
+
+        Trip trip = Trip.Create(id, TripName.Create("Summer France"), TripDates.None);
+
+        trip.Id.ShouldBe(id);
+    }
+
+    [Fact]
+    public void A_trip_cannot_be_created_with_an_empty_id()
+        => Should.Throw<ArgumentException>(() => Trip.Create(Guid.Empty, TripName.Create("Summer France"), TripDates.None));
 }

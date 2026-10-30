@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Trips.Application;
 using Trips.Infrastructure.Sql;
 using Web.Endpoints;
+using Web.Seeding;
 
 const string FrontendCorsPolicy = "frontend";
 
@@ -39,6 +40,7 @@ if (app.Environment.IsDevelopment())
     await using AsyncServiceScope scope = app.Services.CreateAsyncScope();
     await scope.ServiceProvider.GetRequiredService<CatalogDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<TripsDbContext>().Database.MigrateAsync();
+    await ActivatorUtilities.CreateInstance<DevelopmentSeeder>(scope.ServiceProvider).SeedAsync(CancellationToken.None);
 }
 
 app.UseExceptionHandler();

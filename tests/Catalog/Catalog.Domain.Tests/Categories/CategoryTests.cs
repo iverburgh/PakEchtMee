@@ -71,4 +71,18 @@ public sealed class CategoryTests
 
         Should.Throw<DomainValidationException>(() => category.Rename(CategoryName.Create("Bathroom")));
     }
+
+    [Fact]
+    public void A_category_created_with_an_id_keeps_that_id()
+    {
+        Guid id = Guid.CreateVersion7();
+
+        Category category = Category.Create(id, CategoryName.Create("Toiletries"));
+
+        category.Id.ShouldBe(id);
+    }
+
+    [Fact]
+    public void A_category_cannot_be_created_with_an_empty_id()
+        => Should.Throw<ArgumentException>(() => Category.Create(Guid.Empty, CategoryName.Create("Toiletries")));
 }

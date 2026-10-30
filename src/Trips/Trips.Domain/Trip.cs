@@ -34,12 +34,16 @@ public sealed class Trip
 
     public IReadOnlyList<TripItem> Items => items;
 
-    public static Trip Create(TripName name, TripDates dates)
+    public static Trip Create(TripName name, TripDates dates) => Create(Guid.CreateVersion7(), name, dates);
+
+    /// <summary>Creates a trip with a caller-chosen id, so seed data keeps the same id across runs.</summary>
+    public static Trip Create(Guid id, TripName name, TripDates dates)
     {
+        ArgumentOutOfRangeException.ThrowIfEqual(id, Guid.Empty);
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(dates);
 
-        return new Trip(Guid.CreateVersion7(), name, dates);
+        return new Trip(id, name, dates);
     }
 
     /// <summary>Adds the given categories and their items; items that already exist are restored rather than duplicated.</summary>

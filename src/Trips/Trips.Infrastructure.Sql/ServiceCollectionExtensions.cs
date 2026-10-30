@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Trips.Domain;
 using Trips.Infrastructure.Sql.Repositories;
+using Trips.Infrastructure.Sql.Seeding;
 
 namespace Trips.Infrastructure.Sql;
 
@@ -16,6 +17,7 @@ public static class ServiceCollectionExtensions
             sql => sql.MigrationsHistoryTable("__EFMigrationsHistory", TripsDbContext.Schema)));
 
         services.AddScoped<ITripRepository, TripRepository>();
+        services.AddScoped<TripsSeeder>();
 
         return services;
     }

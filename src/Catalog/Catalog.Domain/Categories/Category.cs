@@ -21,11 +21,15 @@ public sealed class Category
 
     public bool IsDeleted => DeletedAt is not null;
 
-    public static Category Create(CategoryName name)
+    public static Category Create(CategoryName name) => Create(Guid.CreateVersion7(), name);
+
+    /// <summary>Creates a category with a caller-chosen id, so seed data keeps the same id across runs.</summary>
+    public static Category Create(Guid id, CategoryName name)
     {
+        ArgumentOutOfRangeException.ThrowIfEqual(id, Guid.Empty);
         ArgumentNullException.ThrowIfNull(name);
 
-        return new Category(Guid.CreateVersion7(), name);
+        return new Category(id, name);
     }
 
     public void Rename(CategoryName name)

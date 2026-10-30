@@ -1,6 +1,7 @@
 using Catalog.Domain.Categories;
 using Catalog.Domain.Items;
 using Catalog.Infrastructure.Sql.Repositories;
+using Catalog.Infrastructure.Sql.Seeding;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -18,6 +19,7 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<ICatalogItemRepository, CatalogItemRepository>();
+        services.AddScoped<CatalogSeeder>();
 
         return services;
     }

@@ -29,12 +29,17 @@ public sealed class CatalogItem
     public bool IsDeleted => DeletedAt is not null;
 
     public static CatalogItem Create(Category category, ItemName name, Amount? amount)
+        => Create(Guid.CreateVersion7(), category, name, amount);
+
+    /// <summary>Creates an item with a caller-chosen id, so seed data keeps the same id across runs.</summary>
+    public static CatalogItem Create(Guid id, Category category, ItemName name, Amount? amount)
     {
+        ArgumentOutOfRangeException.ThrowIfEqual(id, Guid.Empty);
         ArgumentNullException.ThrowIfNull(category);
         ArgumentNullException.ThrowIfNull(name);
         category.EnsureNotDeleted();
 
-        return new CatalogItem(Guid.CreateVersion7(), category.Id, name, amount);
+        return new CatalogItem(id, category.Id, name, amount);
     }
 
     public void Rename(ItemName name)

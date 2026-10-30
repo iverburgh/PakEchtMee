@@ -1,6 +1,3 @@
-using Catalog.Application.Categories;
-using Catalog.Application.Contracts;
-using Catalog.Application.Items;
 using CSharpFunctionalExtensions;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -79,31 +76,13 @@ internal static class TripEndpoints
         ISender sender,
         CancellationToken cancellationToken)
     {
-        Result<IReadOnlyList<CategoryDto>, Exception> categories =
-            await sender.Send(new ListCategoriesHandler.Query(), cancellationToken);
+        Result<IReadOnlyList<CategorySelection>, Exception> selections =
+            await CategorySelections.ReadAsync(sender, request.CategoryIds, cancellationToken);
 
-        if (categories.IsFailure)
-            return categories.ToHttpResult();
+        if (selections.IsFailure)
+            return selections.ToHttpResult();
 
-        Result<IReadOnlyList<CatalogItemDto>, Exception> items =
-            await sender.Send(new ListCatalogItemsForCategoriesHandler.Query(request.CategoryIds), cancellationToken);
-
-        if (items.IsFailure)
-            return items.ToHttpResult();
-
-        List<CategorySelection> selections =
-        [
-            .. categories.Value
-                .Where(category => request.CategoryIds.Contains(category.Id))
-                .Select(category => new CategorySelection(
-                    category.Id,
-                    category.Name,
-                    [.. items.Value
-                        .Where(item => item.CategoryId == category.Id)
-                        .Select(item => new CatalogItemSnapshot(item.Id, item.Name, item.Quantity, item.Unit))]))
-        ];
-
-        return (await sender.Send(new SelectTripCategoriesHandler.Command(tripId, selections), cancellationToken)).ToHttpResult();
+        return (await sender.Send(new SelectTripCategoriesHandler.Command(tripId, selections.Value), cancellationToken)).ToHttpResult();
     }
 
     internal sealed record CreateTripRequest(string? Name, DateOnly? StartDate, DateOnly? EndDate);

@@ -28,6 +28,29 @@ public sealed class CatalogItemTests
     }
 
     [Fact]
+    public void An_item_created_with_an_id_keeps_that_id()
+    {
+        Guid id = Guid.CreateVersion7();
+
+        CatalogItem item = CatalogItem.Create(id, ACategory(), ItemName.Create("Toothbrush"), null);
+
+        item.Id.ShouldBe(id);
+    }
+
+    [Fact]
+    public void An_item_cannot_be_created_with_an_empty_id()
+        => Should.Throw<ArgumentException>(() => CatalogItem.Create(Guid.Empty, ACategory(), ItemName.Create("Toothbrush"), null));
+
+    [Fact]
+    public void An_item_with_an_id_cannot_be_created_in_a_removed_category()
+    {
+        Category category = ACategory();
+        category.Delete(Now);
+
+        Should.Throw<DomainValidationException>(() => CatalogItem.Create(Guid.CreateVersion7(), category, ItemName.Create("Toothbrush"), null));
+    }
+
+    [Fact]
     public void An_item_can_carry_a_quantity_and_unit()
     {
         CatalogItem item = AnItem(ACategory(), "Socks", 7, "pair");
