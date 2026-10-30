@@ -11,9 +11,10 @@ public sealed class Trip
     private readonly List<TripCategory> categories = [];
     private readonly List<TripItem> items = [];
 
-    private Trip(Guid id, TripName name, TripDates dates)
+    private Trip(Guid id, Guid familyId, TripName name, TripDates dates)
     {
         Id = id;
+        FamilyId = familyId;
         Name = name;
         Dates = dates;
     }
@@ -26,6 +27,9 @@ public sealed class Trip
 
     public Guid Id { get; private set; }
 
+    /// <summary>The family the trip belongs to; only its members may see or change it.</summary>
+    public Guid FamilyId { get; private set; }
+
     public TripName Name { get; private set; }
 
     public TripDates Dates { get; private set; }
@@ -34,16 +38,17 @@ public sealed class Trip
 
     public IReadOnlyList<TripItem> Items => items;
 
-    public static Trip Create(TripName name, TripDates dates) => Create(Guid.CreateVersion7(), name, dates);
+    public static Trip Create(Guid familyId, TripName name, TripDates dates) => Create(Guid.CreateVersion7(), familyId, name, dates);
 
     /// <summary>Creates a trip with a caller-chosen id, so seed data keeps the same id across runs.</summary>
-    public static Trip Create(Guid id, TripName name, TripDates dates)
+    public static Trip Create(Guid id, Guid familyId, TripName name, TripDates dates)
     {
         ArgumentOutOfRangeException.ThrowIfEqual(id, Guid.Empty);
+        ArgumentOutOfRangeException.ThrowIfEqual(familyId, Guid.Empty);
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(dates);
 
-        return new Trip(id, name, dates);
+        return new Trip(id, familyId, name, dates);
     }
 
     /// <summary>Adds the given categories and their items; items that already exist are restored rather than duplicated.</summary>

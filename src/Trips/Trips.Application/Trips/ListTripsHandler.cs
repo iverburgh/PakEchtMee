@@ -9,13 +9,13 @@ namespace Trips.Application.Trips;
 public sealed class ListTripsHandler(ITripRepository repository, TimeProvider timeProvider)
     : IRequestHandler<ListTripsHandler.Query, Result>
 {
-    public sealed record Query : IRequest<Result>;
+    public sealed record Query(Guid FamilyId) : IRequest<Result>;
 
     public async Task<Result> Handle(Query request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        IReadOnlyList<Trip> trips = await repository.ListAsync(cancellationToken);
+        IReadOnlyList<Trip> trips = await repository.ListAsync(request.FamilyId, cancellationToken);
         DateOnly today = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
 
         return trips

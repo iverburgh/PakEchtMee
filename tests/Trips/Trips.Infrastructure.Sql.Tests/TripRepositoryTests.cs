@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Shared.Tests;
 using Shouldly;
 using Trips.Domain;
@@ -10,6 +10,8 @@ namespace Trips.Infrastructure.Sql.Tests;
 [IntegrationTest]
 public sealed class TripRepositoryTests(TripsDatabaseFixture fixture) : IClassFixture<TripsDatabaseFixture>
 {
+    private static readonly Guid Family = Guid.CreateVersion7();
+
     private static CategorySelection ACategory(Guid categoryId, string name, int itemCount)
         => new(categoryId, name, [.. Enumerable.Range(1, itemCount).Select(index => new CatalogItemSnapshot(Guid.CreateVersion7(), $"{name} {index}", index, "piece"))]);
 
@@ -17,7 +19,7 @@ public sealed class TripRepositoryTests(TripsDatabaseFixture fixture) : IClassFi
     {
         await using TripsDbContext context = fixture.CreateContext();
         TripRepository repository = new(context);
-        Trip trip = Trip.Create(TripName.Create($"Trip {Guid.NewGuid():N}"), TripDates.None);
+        Trip trip = Trip.Create(Family, TripName.Create($"Trip {Guid.NewGuid():N}"), TripDates.None);
         trip.SelectCategories([ACategory(categoryId, "Toiletries", itemCount)]);
         repository.Add(trip);
         await repository.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -32,7 +34,7 @@ public sealed class TripRepositoryTests(TripsDatabaseFixture fixture) : IClassFi
         Guid tripId = await GivenTripWithItemsAsync(categoryId, 4);
 
         await using TripsDbContext context = fixture.CreateContext();
-        Trip? trip = await new TripRepository(context).FindAsync(tripId, TestContext.Current.CancellationToken);
+        Trip? trip = await new TripRepository(context).FindAsync(tripId, Family, TestContext.Current.CancellationToken);
 
         trip.ShouldNotBeNull();
         trip.Items.Count.ShouldBe(4);
@@ -46,7 +48,35 @@ public sealed class TripRepositoryTests(TripsDatabaseFixture fixture) : IClassFi
     {
         await using TripsDbContext context = fixture.CreateContext();
 
-        (await new TripRepository(context).FindAsync(Guid.CreateVersion7(), TestContext.Current.CancellationToken)).ShouldBeNull();
+        (await new TripRepository(context).FindAsync(Guid.CreateVersion7(), Family, TestContext.Current.CancellationToken)).ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task A_trip_of_another_family_is_not_found()
+    {
+        Guid tripId = await GivenTripWithItemsAsync(Guid.CreateVersion7());
+
+        await using TripsDbContext context = fixture.CreateContext();
+
+        (await new TripRepository(context).FindAsync(tripId, Guid.CreateVersion7(), TestContext.Current.CancellationToken)).ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task Listing_only_returns_the_familys_trips()
+    {
+        Guid ours = await GivenTripWithItemsAsync(Guid.CreateVersion7());
+        Guid otherFamily = Guid.CreateVersion7();
+        await using (TripsDbContext context = fixture.CreateContext())
+        {
+            context.Trips.Add(Trip.Create(otherFamily, TripName.Create($"Trip {Guid.NewGuid():N}"), TripDates.Create(null, null)));
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await using TripsDbContext verification = fixture.CreateContext();
+        IReadOnlyList<Trip> listed = await new TripRepository(verification).ListAsync(Family, TestContext.Current.CancellationToken);
+
+        listed.ShouldContain(trip => trip.Id == ours);
+        listed.ShouldAllBe(trip => trip.FamilyId == Family);
     }
 
     [Fact]
@@ -58,7 +88,7 @@ public sealed class TripRepositoryTests(TripsDatabaseFixture fixture) : IClassFi
         await using (TripsDbContext context = fixture.CreateContext())
         {
             TripRepository repository = new(context);
-            Trip trip = (await repository.FindAsync(tripId, TestContext.Current.CancellationToken))!;
+            Trip trip = (await repository.FindAsync(tripId, Family, TestContext.Current.CancellationToken))!;
             itemId = trip.Items[0].Id;
             trip.AdvanceItem(itemId);
             trip.AdvanceItem(itemId);
@@ -66,7 +96,7 @@ public sealed class TripRepositoryTests(TripsDatabaseFixture fixture) : IClassFi
         }
 
         await using TripsDbContext verification = fixture.CreateContext();
-        Trip reloaded = (await new TripRepository(verification).FindAsync(tripId, TestContext.Current.CancellationToken))!;
+        Trip reloaded = (await new TripRepository(verification).FindAsync(tripId, Family, TestContext.Current.CancellationToken))!;
 
         reloaded.Items[0].Status.ShouldBe(PackingStatus.Packed);
     }
@@ -80,7 +110,7 @@ public sealed class TripRepositoryTests(TripsDatabaseFixture fixture) : IClassFi
         await using (TripsDbContext context = fixture.CreateContext())
         {
             TripRepository repository = new(context);
-            Trip trip = (await repository.FindAsync(tripId, TestContext.Current.CancellationToken))!;
+            Trip trip = (await repository.FindAsync(tripId, Family, TestContext.Current.CancellationToken))!;
             itemId = trip.Items[0].Id;
             trip.AdvanceItem(itemId);
             trip.DeleteItem(itemId, DateTimeOffset.UtcNow);
@@ -90,14 +120,14 @@ public sealed class TripRepositoryTests(TripsDatabaseFixture fixture) : IClassFi
         await using (TripsDbContext context = fixture.CreateContext())
         {
             TripRepository repository = new(context);
-            Trip trip = (await repository.FindAsync(tripId, TestContext.Current.CancellationToken))!;
+            Trip trip = (await repository.FindAsync(tripId, Family, TestContext.Current.CancellationToken))!;
             trip.Progress().Total.ShouldBe(1);
             trip.RestoreItem(itemId);
             await repository.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         await using TripsDbContext verification = fixture.CreateContext();
-        Trip reloaded = (await new TripRepository(verification).FindAsync(tripId, TestContext.Current.CancellationToken))!;
+        Trip reloaded = (await new TripRepository(verification).FindAsync(tripId, Family, TestContext.Current.CancellationToken))!;
 
         reloaded.Progress().Total.ShouldBe(2);
         reloaded.Items.Single(item => item.Id == itemId).Status.ShouldBe(PackingStatus.Prepared);
@@ -112,13 +142,13 @@ public sealed class TripRepositoryTests(TripsDatabaseFixture fixture) : IClassFi
         await using (TripsDbContext context = fixture.CreateContext())
         {
             TripRepository repository = new(context);
-            Trip trip = (await repository.FindAsync(tripId, TestContext.Current.CancellationToken))!;
+            Trip trip = (await repository.FindAsync(tripId, Family, TestContext.Current.CancellationToken))!;
             trip.RemoveCategory(categoryId, DateTimeOffset.UtcNow);
             await repository.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         await using TripsDbContext verification = fixture.CreateContext();
-        Trip reloaded = (await new TripRepository(verification).FindAsync(tripId, TestContext.Current.CancellationToken))!;
+        Trip reloaded = (await new TripRepository(verification).FindAsync(tripId, Family, TestContext.Current.CancellationToken))!;
 
         reloaded.Categories.ShouldBeEmpty();
         reloaded.Items.ShouldAllBe(item => item.IsDeleted);
@@ -132,7 +162,7 @@ public sealed class TripRepositoryTests(TripsDatabaseFixture fixture) : IClassFi
         await using (TripsDbContext context = fixture.CreateContext())
         {
             TripRepository repository = new(context);
-            Trip trip = Trip.Create(TripName.Create($"Trip {Guid.NewGuid():N}"), TripDates.None);
+            Trip trip = Trip.Create(Family, TripName.Create($"Trip {Guid.NewGuid():N}"), TripDates.None);
             repository.Add(trip);
             await repository.SaveChangesAsync(TestContext.Current.CancellationToken);
             tripId = trip.Id;
@@ -141,13 +171,13 @@ public sealed class TripRepositoryTests(TripsDatabaseFixture fixture) : IClassFi
         await using (TripsDbContext context = fixture.CreateContext())
         {
             TripRepository repository = new(context);
-            Trip trip = (await repository.FindAsync(tripId, TestContext.Current.CancellationToken))!;
+            Trip trip = (await repository.FindAsync(tripId, Family, TestContext.Current.CancellationToken))!;
             trip.SelectCategories([ACategory(Guid.CreateVersion7(), "Toiletries", 3)]);
             await repository.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         await using TripsDbContext verification = fixture.CreateContext();
-        Trip reloaded = (await new TripRepository(verification).FindAsync(tripId, TestContext.Current.CancellationToken))!;
+        Trip reloaded = (await new TripRepository(verification).FindAsync(tripId, Family, TestContext.Current.CancellationToken))!;
 
         reloaded.Items.Count.ShouldBe(3);
         reloaded.Categories.Count.ShouldBe(1);
@@ -163,8 +193,8 @@ public sealed class TripRepositoryTests(TripsDatabaseFixture fixture) : IClassFi
         TripRepository firstRepository = new(first);
         TripRepository secondRepository = new(second);
 
-        Trip firstTrip = (await firstRepository.FindAsync(tripId, TestContext.Current.CancellationToken))!;
-        Trip secondTrip = (await secondRepository.FindAsync(tripId, TestContext.Current.CancellationToken))!;
+        Trip firstTrip = (await firstRepository.FindAsync(tripId, Family, TestContext.Current.CancellationToken))!;
+        Trip secondTrip = (await secondRepository.FindAsync(tripId, Family, TestContext.Current.CancellationToken))!;
 
         firstTrip.AdvanceItem(firstTrip.Items[0].Id);
         await firstRepository.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -181,7 +211,7 @@ public sealed class TripRepositoryTests(TripsDatabaseFixture fixture) : IClassFi
         await GivenTripWithItemsAsync(Guid.CreateVersion7(), 2);
 
         await using TripsDbContext context = fixture.CreateContext();
-        IReadOnlyList<Trip> trips = await new TripRepository(context).ListAsync(TestContext.Current.CancellationToken);
+        IReadOnlyList<Trip> trips = await new TripRepository(context).ListAsync(Family, TestContext.Current.CancellationToken);
 
         trips.ShouldNotBeEmpty();
         trips.ShouldContain(trip => trip.Progress().Total == 2);

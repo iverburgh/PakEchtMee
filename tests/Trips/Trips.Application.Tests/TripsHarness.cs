@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Trips.Domain;
@@ -18,6 +18,9 @@ internal sealed class TripsHarness
         Mediator = Services.GetRequiredService<IMediator>();
     }
 
+    /// <summary>The family every trip in these tests belongs to.</summary>
+    public static readonly Guid Family = Guid.CreateVersion7();
+
     public Mock<ITripRepository> Repository { get; } = new();
 
     public ServiceProvider Services { get; }
@@ -26,8 +29,8 @@ internal sealed class TripsHarness
 
     public Trip GivenTrip(string name = "Summer France", DateOnly? start = null, DateOnly? end = null)
     {
-        Trip trip = Trip.Create(TripName.Create(name), TripDates.Create(start, end));
-        Repository.Setup(repository => repository.FindAsync(trip.Id, It.IsAny<CancellationToken>())).ReturnsAsync(trip);
+        Trip trip = Trip.Create(Family, TripName.Create(name), TripDates.Create(start, end));
+        Repository.Setup(repository => repository.FindAsync(trip.Id, Family, It.IsAny<CancellationToken>())).ReturnsAsync(trip);
 
         return trip;
     }

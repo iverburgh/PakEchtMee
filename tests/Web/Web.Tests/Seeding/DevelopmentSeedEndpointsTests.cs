@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using Shared.Tests;
 using Shouldly;
 using Web.Seeding;
@@ -10,7 +10,7 @@ namespace Web.Tests.Seeding;
 [IntegrationTest]
 public sealed class DevelopmentSeedEndpointsTests(DevelopmentApiFixture fixture) : IClassFixture<DevelopmentApiFixture>
 {
-    private readonly HttpClient client = fixture.CreateClient();
+    private readonly HttpClient client = fixture.ClientForVerburgh();
 
     private async Task<TripDetailsResponse> GetTripAsync(Guid id)
         => (await client.GetFromJsonAsync<TripDetailsResponse>($"/api/trips/{id}", TestContext.Current.CancellationToken))!;
@@ -55,5 +55,28 @@ public sealed class DevelopmentSeedEndpointsTests(DevelopmentApiFixture fixture)
         deleted.Items.Count.ShouldBe(16);
         deleted.Items.ShouldContain(item => item.Name == "Zwembandjes");
         deleted.Items.ShouldContain(item => item.Name == "Slippers/crocs/teva's");
+    }
+
+    [Fact]
+    public async Task The_seeded_categories_are_general()
+    {
+        List<CatalogScopingEndpointsTests.CategoryResponse> categories =
+            (await client.GetFromJsonAsync<List<CatalogScopingEndpointsTests.CategoryResponse>>("/api/categories", TestContext.Current.CancellationToken))!;
+
+        categories.ShouldAllBe(category => category.IsGeneral);
+    }
+
+    [Fact]
+    public async Task Another_family_sees_the_general_catalog_but_not_the_seeded_trips()
+    {
+        HttpClient other = await fixture.ClientForNewFamilyAsync();
+
+        List<CatalogScopingEndpointsTests.CategoryResponse> categories =
+            (await other.GetFromJsonAsync<List<CatalogScopingEndpointsTests.CategoryResponse>>("/api/categories", TestContext.Current.CancellationToken))!;
+        List<IdOnly> trips = (await other.GetFromJsonAsync<List<IdOnly>>("/api/trips", TestContext.Current.CancellationToken))!;
+
+        categories.Count.ShouldBe(22);
+        trips.ShouldNotContain(trip => trip.Id == DevelopmentSeeder.CampingTripId);
+        trips.ShouldNotContain(trip => trip.Id == DevelopmentSeeder.WinterSportsTripId);
     }
 }

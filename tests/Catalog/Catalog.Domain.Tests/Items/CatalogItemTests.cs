@@ -1,4 +1,4 @@
-using Catalog.Domain.Categories;
+﻿using Catalog.Domain.Categories;
 using Catalog.Domain.Items;
 using Shared.Validation;
 using Shouldly;
@@ -74,9 +74,41 @@ public sealed class CatalogItemTests
         Category target = ACategory("Travel documents");
         CatalogItem item = AnItem(source, "Charger");
 
-        item.MoveTo(target);
+        item.MoveTo(source, target);
 
         item.CategoryId.ShouldBe(target.Id);
+    }
+
+    [Fact]
+    public void An_item_moves_between_categories_of_the_same_family()
+    {
+        Guid family = Guid.CreateVersion7();
+        Category source = Category.CreateForFamily(family, CategoryName.Create("Electronics"));
+        Category target = Category.CreateForFamily(family, CategoryName.Create("Travel documents"));
+        CatalogItem item = AnItem(source, "Charger");
+
+        item.MoveTo(source, target);
+
+        item.CategoryId.ShouldBe(target.Id);
+    }
+
+    [Fact]
+    public void A_general_item_cannot_move_into_a_family_category()
+    {
+        Category general = ACategory("Tent");
+        Category own = Category.CreateForFamily(Guid.CreateVersion7(), CategoryName.Create("Eigen spullen"));
+        CatalogItem item = AnItem(general, "Haringen");
+
+        Should.Throw<DomainValidationException>(() => item.MoveTo(general, own));
+        item.CategoryId.ShouldBe(general.Id);
+    }
+
+    [Fact]
+    public void Moving_from_a_category_the_item_is_not_in_is_a_programming_error()
+    {
+        CatalogItem item = AnItem(ACategory("Electronics"), "Charger");
+
+        Should.Throw<ArgumentException>(() => item.MoveTo(ACategory("Other"), ACategory("Travel documents")));
     }
 
     [Fact]
@@ -84,9 +116,10 @@ public sealed class CatalogItemTests
     {
         Category target = ACategory("Travel documents");
         target.Delete(Now);
-        CatalogItem item = AnItem(ACategory("Electronics"), "Charger");
+        Category source = ACategory("Electronics");
+        CatalogItem item = AnItem(source, "Charger");
 
-        Should.Throw<DomainValidationException>(() => item.MoveTo(target));
+        Should.Throw<DomainValidationException>(() => item.MoveTo(source, target));
     }
 
     [Fact]
@@ -124,11 +157,12 @@ public sealed class CatalogItemTests
     [Fact]
     public void A_removed_item_cannot_be_changed()
     {
-        CatalogItem item = AnItem(ACategory());
+        Category category = ACategory();
+        CatalogItem item = AnItem(category);
         item.Delete(Now);
 
         Should.Throw<DomainValidationException>(() => item.Rename(ItemName.Create("Other")));
         Should.Throw<DomainValidationException>(() => item.ChangeAmount(Amount.Create(1, null)));
-        Should.Throw<DomainValidationException>(() => item.MoveTo(ACategory("Other")));
+        Should.Throw<DomainValidationException>(() => item.MoveTo(category, ACategory("Other")));
     }
 }

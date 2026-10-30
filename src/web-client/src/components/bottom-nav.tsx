@@ -2,16 +2,44 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Luggage, ListChecks } from "lucide-react";
+import { signOut } from "next-auth/react";
+import { CircleUserRound, ListChecks, LogOut, Luggage, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-const links = [
+const memberLinks = [
   { href: "/", label: "Uitjes", icon: Luggage, match: (path: string) => path === "/" || path.startsWith("/trips") },
   { href: "/catalogus", label: "Catalogus", icon: ListChecks, match: (path: string) => path.startsWith("/catalogus") },
 ];
 
-export function BottomNav() {
+const administratorLink = {
+  href: "/beheer",
+  label: "Beheer",
+  icon: ShieldCheck,
+  match: (path: string) => path.startsWith("/beheer"),
+};
+
+const tabClass = "flex min-h-14 w-full flex-col items-center justify-center gap-1 text-xs font-medium transition-colors motion-reduce:transition-none";
+
+export function BottomNav({
+  email,
+  familyName,
+  isAdministrator,
+}: {
+  email: string;
+  familyName: string | null;
+  isAdministrator: boolean;
+}) {
   const pathname = usePathname();
+  const links = isAdministrator ? [...memberLinks, administratorLink] : memberLinks;
 
   return (
     <nav
@@ -27,10 +55,7 @@ export function BottomNav() {
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className={cn(
-                  "flex min-h-14 flex-col items-center justify-center gap-1 text-xs font-medium transition-colors motion-reduce:transition-none",
-                  active ? "text-primary" : "text-muted-foreground hover:text-foreground",
-                )}
+                className={cn(tabClass, active ? "text-primary" : "text-muted-foreground hover:text-foreground")}
               >
                 <Icon className="size-5" aria-hidden />
                 {label}
@@ -38,6 +63,30 @@ export function BottomNav() {
             </li>
           );
         })}
+        <li className="flex-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger className={cn(tabClass, "text-muted-foreground hover:text-foreground")}>
+              <CircleUserRound className="size-5" aria-hidden />
+              Account
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" side="top" className="min-w-60">
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="flex flex-col gap-0.5">
+                  <span className="text-foreground truncate font-medium">{email}</span>
+                  <span className="text-muted-foreground text-xs font-normal">
+                    {familyName ? `Familie ${familyName}` : "Geen familie"}
+                    {isAdministrator ? " · beheerder" : ""}
+                  </span>
+                </DropdownMenuLabel>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => void signOut({ callbackUrl: "/inloggen" })}>
+                <LogOut aria-hidden />
+                Uitloggen
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </li>
       </ul>
     </nav>
   );

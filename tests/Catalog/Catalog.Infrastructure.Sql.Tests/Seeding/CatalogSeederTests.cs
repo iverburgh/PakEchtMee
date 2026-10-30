@@ -1,4 +1,4 @@
-using Catalog.Domain.Categories;
+﻿using Catalog.Domain.Categories;
 using Catalog.Domain.Items;
 using Catalog.Infrastructure.Sql.Seeding;
 using Microsoft.EntityFrameworkCore;
@@ -136,7 +136,7 @@ public sealed class CatalogSeederTests(SqlServerTestContainerFixture server)
     }
 
     [Fact]
-    public async Task A_user_category_with_a_seed_name_is_left_alone()
+    public async Task A_general_category_with_a_seed_name_is_left_alone()
     {
         Func<CatalogDbContext> createContext = await NewDatabaseAsync();
         Category userCategory = Category.Create(CategoryName.Create("keukengerei"));
@@ -154,6 +154,35 @@ public sealed class CatalogSeederTests(SqlServerTestContainerFixture server)
         kept.Name.Value.ShouldBe("keukengerei");
         (await check.Categories.AnyAsync(category => category.Id == CatalogSeedData.CategoryId(CatalogSeedData.Keukengerei), CancellationToken))
             .ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task A_family_category_with_a_seed_name_does_not_block_the_seed()
+    {
+        Func<CatalogDbContext> createContext = await NewDatabaseAsync();
+        Category familyCategory = Category.CreateForFamily(Guid.CreateVersion7(), CategoryName.Create("Keukengerei"));
+        await using (CatalogDbContext context = createContext())
+        {
+            context.Categories.Add(familyCategory);
+            await context.SaveChangesAsync(CancellationToken);
+        }
+
+        CatalogSeedResult result = await SeedAsync(createContext);
+
+        result.ShouldBe(new CatalogSeedResult(22, 149));
+        await using CatalogDbContext check = createContext();
+        (await check.Categories.CountAsync(category => category.Name == CategoryName.Create("Keukengerei"), CancellationToken)).ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task Seeded_categories_are_general()
+    {
+        Func<CatalogDbContext> createContext = await NewDatabaseAsync();
+
+        await SeedAsync(createContext);
+
+        await using CatalogDbContext context = createContext();
+        (await context.Categories.AllAsync(category => category.FamilyId == null, CancellationToken)).ShouldBeTrue();
     }
 
     [Fact]

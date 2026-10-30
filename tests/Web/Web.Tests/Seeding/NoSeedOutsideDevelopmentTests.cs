@@ -9,7 +9,7 @@ namespace Web.Tests.Seeding;
 [IntegrationTest]
 public sealed class NoSeedOutsideDevelopmentTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 {
-    private readonly HttpClient client = fixture.CreateClient();
+    private readonly HttpClient client = fixture.ClientFor(ApiFixture.MemberOfA);
 
     [Fact]
     public async Task A_fresh_database_stays_empty_outside_development()

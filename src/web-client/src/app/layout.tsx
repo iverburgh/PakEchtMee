@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
-import { BottomNav } from "@/components/bottom-nav";
+import { AppChrome } from "@/components/app-chrome";
 import { ServiceWorkerUpdater } from "@/components/service-worker-updater";
 import "./globals.css";
 
@@ -39,7 +39,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col pb-20 print:max-w-none print:pb-0">
           {children}
         </div>
-        <BottomNav />
+        <AppChrome />
         <ServiceWorkerUpdater />
         <Toaster position="top-center" richColors closeButton />
       </body>

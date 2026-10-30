@@ -9,7 +9,7 @@ namespace Web.Tests;
 [IntegrationTest]
 public sealed class CatalogEndpointsTests(ApiFixture fixture) : IClassFixture<ApiFixture>
 {
-    private HttpClient Client => fixture.CreateClient();
+    private HttpClient Client => fixture.ClientFor(ApiFixture.MemberOfA);
 
     private static StringContent NoBody => new("{}", System.Text.Encoding.UTF8, "application/json");
 

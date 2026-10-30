@@ -1,7 +1,7 @@
 using Catalog.Application.Contracts;
+using Catalog.Domain;
 using Catalog.Domain.Categories;
 using MediatR;
-using Shared.Validation;
 using Result = CSharpFunctionalExtensions.Result<Catalog.Application.Contracts.CategoryDto, System.Exception>;
 
 namespace Catalog.Application.Categories;
@@ -9,7 +9,7 @@ namespace Catalog.Application.Categories;
 public sealed class RemoveCategoryHandler(ICategoryRepository repository, TimeProvider timeProvider)
     : IRequestHandler<RemoveCategoryHandler.Command, Result>
 {
-    public sealed record Command(Guid Id) : IRequest<Result>;
+    public sealed record Command(CatalogActor Actor, Guid Id) : IRequest<Result>;
 
     public async Task<Result> Handle(Command request, CancellationToken cancellationToken)
     {
@@ -17,10 +17,10 @@ public sealed class RemoveCategoryHandler(ICategoryRepository repository, TimePr
 
         Category? category = await repository.FindAsync(request.Id, cancellationToken);
 
-        if (category is null)
-            return NotFoundException.For("Categorie", request.Id);
+        if (CatalogAccessRules.Check(category, request.Id, request.Actor, CatalogAccess.Edit) is { } denied)
+            return denied;
 
-        category.Delete(timeProvider.GetUtcNow());
+        category!.Delete(timeProvider.GetUtcNow());
         await repository.SaveChangesAsync(cancellationToken);
 
         return CategoryDto.From(category);

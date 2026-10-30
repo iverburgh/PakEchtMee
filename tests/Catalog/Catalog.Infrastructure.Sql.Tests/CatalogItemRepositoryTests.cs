@@ -1,4 +1,4 @@
-using Catalog.Domain.Categories;
+﻿using Catalog.Domain.Categories;
 using Catalog.Domain.Items;
 using Catalog.Infrastructure.Sql.Repositories;
 using Shared.Tests;
@@ -139,8 +139,9 @@ public sealed class CatalogItemRepositoryTests(CatalogDatabaseFixture fixture) :
             CatalogItemRepository items = new(context);
             CategoryRepository categories = new(context);
             CatalogItem item = (await items.FindAsync(created.Id, TestContext.Current.CancellationToken))!;
+            Category origin = (await categories.FindAsync(source.Id, TestContext.Current.CancellationToken))!;
             Category destination = (await categories.FindAsync(target.Id, TestContext.Current.CancellationToken))!;
-            item.MoveTo(destination);
+            item.MoveTo(origin, destination);
             await items.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 

@@ -9,13 +9,13 @@ namespace Trips.Application.Trips;
 public sealed class RemoveTripCategoryHandler(ITripRepository repository, TimeProvider timeProvider)
     : IRequestHandler<RemoveTripCategoryHandler.Command, Result>
 {
-    public sealed record Command(Guid TripId, Guid CategoryId) : IRequest<Result>;
+    public sealed record Command(Guid FamilyId, Guid TripId, Guid CategoryId) : IRequest<Result>;
 
     public async Task<Result> Handle(Command request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        Trip? trip = await repository.FindAsync(request.TripId, cancellationToken);
+        Trip? trip = await repository.FindAsync(request.TripId, request.FamilyId, cancellationToken);
 
         if (trip is null)
             return NotFoundException.For("Uitje", request.TripId);

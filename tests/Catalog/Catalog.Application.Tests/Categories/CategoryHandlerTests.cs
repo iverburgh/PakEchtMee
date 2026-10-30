@@ -1,4 +1,4 @@
-using Catalog.Application.Categories;
+﻿using Catalog.Application.Categories;
 using Catalog.Application.Contracts;
 using Catalog.Domain.Categories;
 using CSharpFunctionalExtensions;
@@ -17,7 +17,7 @@ public sealed class CategoryHandlerTests
     public async Task Creating_a_category_stores_and_returns_it()
     {
         Result<CategoryDto, Exception> result = await harness.Mediator.Send(
-            new CreateCategoryHandler.Command("  Toiletries  "), TestContext.Current.CancellationToken);
+            new CreateCategoryHandler.Command(CatalogHarness.Member, "  Toiletries  "), TestContext.Current.CancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
         result.Value.Name.ShouldBe("Toiletries");
@@ -29,11 +29,11 @@ public sealed class CategoryHandlerTests
     public async Task Creating_a_category_with_an_existing_name_is_rejected()
     {
         harness.Categories
-            .Setup(repository => repository.ExistsWithNameAsync(It.IsAny<CategoryName>(), null, It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.ExistsWithNameAsync(It.IsAny<CategoryName>(), CatalogHarness.Family, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         Result<CategoryDto, Exception> result = await harness.Mediator.Send(
-            new CreateCategoryHandler.Command("toiletries"), TestContext.Current.CancellationToken);
+            new CreateCategoryHandler.Command(CatalogHarness.Member, "toiletries"), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<DomainValidationException>();
@@ -44,7 +44,7 @@ public sealed class CategoryHandlerTests
     public async Task Creating_a_category_without_a_name_is_rejected()
     {
         Result<CategoryDto, Exception> result = await harness.Mediator.Send(
-            new CreateCategoryHandler.Command("   "), TestContext.Current.CancellationToken);
+            new CreateCategoryHandler.Command(CatalogHarness.Member, "   "), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<DomainValidationException>();
@@ -58,7 +58,7 @@ public sealed class CategoryHandlerTests
             .ThrowsAsync(new InvalidOperationException("database unavailable"));
 
         Result<CategoryDto, Exception> result = await harness.Mediator.Send(
-            new CreateCategoryHandler.Command("Toiletries"), TestContext.Current.CancellationToken);
+            new CreateCategoryHandler.Command(CatalogHarness.Member, "Toiletries"), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<InvalidOperationException>();
@@ -68,7 +68,7 @@ public sealed class CategoryHandlerTests
     public async Task Renaming_an_unknown_category_reports_not_found()
     {
         Result<CategoryDto, Exception> result = await harness.Mediator.Send(
-            new RenameCategoryHandler.Command(Guid.CreateVersion7(), "Bathroom"), TestContext.Current.CancellationToken);
+            new RenameCategoryHandler.Command(CatalogHarness.Member, Guid.CreateVersion7(), "Bathroom"), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<NotFoundException>();
@@ -80,7 +80,7 @@ public sealed class CategoryHandlerTests
         Category category = harness.GivenCategory();
 
         Result<CategoryDto, Exception> result = await harness.Mediator.Send(
-            new RenameCategoryHandler.Command(category.Id, "Bathroom"), TestContext.Current.CancellationToken);
+            new RenameCategoryHandler.Command(CatalogHarness.Member, category.Id, "Bathroom"), TestContext.Current.CancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
         result.Value.Name.ShouldBe("Bathroom");
@@ -92,11 +92,11 @@ public sealed class CategoryHandlerTests
     {
         Category category = harness.GivenCategory();
         harness.Categories
-            .Setup(repository => repository.ExistsWithNameAsync(It.IsAny<CategoryName>(), category.Id, It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.ExistsWithNameAsync(It.IsAny<CategoryName>(), CatalogHarness.Family, category.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         Result<CategoryDto, Exception> result = await harness.Mediator.Send(
-            new RenameCategoryHandler.Command(category.Id, "Bathroom"), TestContext.Current.CancellationToken);
+            new RenameCategoryHandler.Command(CatalogHarness.Member, category.Id, "Bathroom"), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<DomainValidationException>();
@@ -109,7 +109,7 @@ public sealed class CategoryHandlerTests
         Category category = harness.GivenCategory("Ski gear");
 
         Result<CategoryDto, Exception> result = await harness.Mediator.Send(
-            new RemoveCategoryHandler.Command(category.Id), TestContext.Current.CancellationToken);
+            new RemoveCategoryHandler.Command(CatalogHarness.Member, category.Id), TestContext.Current.CancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
         result.Value.IsDeleted.ShouldBeTrue();
@@ -120,7 +120,7 @@ public sealed class CategoryHandlerTests
     public async Task Removing_an_unknown_category_reports_not_found()
     {
         Result<CategoryDto, Exception> result = await harness.Mediator.Send(
-            new RemoveCategoryHandler.Command(Guid.CreateVersion7()), TestContext.Current.CancellationToken);
+            new RemoveCategoryHandler.Command(CatalogHarness.Member, Guid.CreateVersion7()), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<NotFoundException>();
@@ -133,7 +133,7 @@ public sealed class CategoryHandlerTests
         category.Delete(DateTimeOffset.UtcNow);
 
         Result<CategoryDto, Exception> result = await harness.Mediator.Send(
-            new RestoreCategoryHandler.Command(category.Id), TestContext.Current.CancellationToken);
+            new RestoreCategoryHandler.Command(CatalogHarness.Member, category.Id), TestContext.Current.CancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
         result.Value.IsDeleted.ShouldBeFalse();
@@ -145,11 +145,11 @@ public sealed class CategoryHandlerTests
         Category category = harness.GivenCategory("Ski gear");
         category.Delete(DateTimeOffset.UtcNow);
         harness.Categories
-            .Setup(repository => repository.ExistsWithNameAsync(It.IsAny<CategoryName>(), category.Id, It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.ExistsWithNameAsync(It.IsAny<CategoryName>(), CatalogHarness.Family, category.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         Result<CategoryDto, Exception> result = await harness.Mediator.Send(
-            new RestoreCategoryHandler.Command(category.Id), TestContext.Current.CancellationToken);
+            new RestoreCategoryHandler.Command(CatalogHarness.Member, category.Id), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<DomainValidationException>();
@@ -160,11 +160,11 @@ public sealed class CategoryHandlerTests
     public async Task Listing_maps_every_category()
     {
         harness.Categories
-            .Setup(repository => repository.ListAsync(false, It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.ListVisibleAsync(CatalogHarness.Family, false, It.IsAny<CancellationToken>()))
             .ReturnsAsync([Category.Create(CategoryName.Create("Toiletries")), Category.Create(CategoryName.Create("Electronics"))]);
 
         Result<IReadOnlyList<CategoryDto>, Exception> result = await harness.Mediator.Send(
-            new ListCategoriesHandler.Query(), TestContext.Current.CancellationToken);
+            new ListCategoriesHandler.Query(CatalogHarness.Member), TestContext.Current.CancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
         result.Value.Select(category => category.Name).ShouldBe(["Toiletries", "Electronics"]);
@@ -174,11 +174,11 @@ public sealed class CategoryHandlerTests
     public async Task Listing_fails_as_a_result_when_the_repository_throws()
     {
         harness.Categories
-            .Setup(repository => repository.ListAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.ListVisibleAsync(It.IsAny<Guid?>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new TimeoutException("database unavailable"));
 
         Result<IReadOnlyList<CategoryDto>, Exception> result = await harness.Mediator.Send(
-            new ListCategoriesHandler.Query(), TestContext.Current.CancellationToken);
+            new ListCategoriesHandler.Query(CatalogHarness.Member), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<TimeoutException>();

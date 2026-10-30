@@ -12,6 +12,8 @@ public sealed class CatalogDbContext(DbContextOptions<CatalogDbContext> options)
 
     public DbSet<CatalogItem> Items => Set<CatalogItem>();
 
+    public DbSet<GeneralCategoryOptOut> OptOuts => Set<GeneralCategoryOptOut>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);

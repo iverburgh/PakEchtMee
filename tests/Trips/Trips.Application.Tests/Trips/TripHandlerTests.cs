@@ -1,4 +1,4 @@
-using CSharpFunctionalExtensions;
+﻿using CSharpFunctionalExtensions;
 using Moq;
 using Shared.Validation;
 using Shouldly;
@@ -17,7 +17,7 @@ public sealed class TripHandlerTests
     public async Task Creating_a_trip_with_dates_stores_it()
     {
         Result<TripSummaryDto, Exception> result = await harness.Mediator.Send(
-            new CreateTripHandler.Command("Summer France", new DateOnly(2026, 7, 4), new DateOnly(2026, 7, 18)),
+            new CreateTripHandler.Command(TripsHarness.Family, "Summer France", new DateOnly(2026, 7, 4), new DateOnly(2026, 7, 18)),
             TestContext.Current.CancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
@@ -31,7 +31,7 @@ public sealed class TripHandlerTests
     public async Task Creating_a_trip_without_dates_is_allowed()
     {
         Result<TripSummaryDto, Exception> result = await harness.Mediator.Send(
-            new CreateTripHandler.Command("Day at the beach", null, null), TestContext.Current.CancellationToken);
+            new CreateTripHandler.Command(TripsHarness.Family, "Day at the beach", null, null), TestContext.Current.CancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
         result.Value.StartDate.ShouldBeNull();
@@ -41,7 +41,7 @@ public sealed class TripHandlerTests
     public async Task Creating_a_trip_with_an_end_before_the_start_is_rejected()
     {
         Result<TripSummaryDto, Exception> result = await harness.Mediator.Send(
-            new CreateTripHandler.Command("Summer France", new DateOnly(2026, 7, 18), new DateOnly(2026, 7, 4)),
+            new CreateTripHandler.Command(TripsHarness.Family, "Summer France", new DateOnly(2026, 7, 18), new DateOnly(2026, 7, 4)),
             TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
@@ -57,7 +57,7 @@ public sealed class TripHandlerTests
             .ThrowsAsync(new InvalidOperationException("database unavailable"));
 
         Result<TripSummaryDto, Exception> result = await harness.Mediator.Send(
-            new CreateTripHandler.Command("Summer France", null, null), TestContext.Current.CancellationToken);
+            new CreateTripHandler.Command(TripsHarness.Family, "Summer France", null, null), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<InvalidOperationException>();
@@ -67,17 +67,17 @@ public sealed class TripHandlerTests
     public async Task Listing_puts_ongoing_and_upcoming_trips_first()
     {
         DateOnly today = DateOnly.FromDateTime(DateTime.UtcNow);
-        Trip past = Trip.Create(TripName.Create("Last winter"), TripDates.Create(today.AddDays(-30), today.AddDays(-20)));
-        Trip ongoing = Trip.Create(TripName.Create("Right now"), TripDates.Create(today.AddDays(-1), today.AddDays(2)));
-        Trip upcoming = Trip.Create(TripName.Create("Next month"), TripDates.Create(today.AddDays(30), today.AddDays(40)));
-        Trip undated = Trip.Create(TripName.Create("Someday"), TripDates.None);
+        Trip past = Trip.Create(TripsHarness.Family, TripName.Create("Last winter"), TripDates.Create(today.AddDays(-30), today.AddDays(-20)));
+        Trip ongoing = Trip.Create(TripsHarness.Family, TripName.Create("Right now"), TripDates.Create(today.AddDays(-1), today.AddDays(2)));
+        Trip upcoming = Trip.Create(TripsHarness.Family, TripName.Create("Next month"), TripDates.Create(today.AddDays(30), today.AddDays(40)));
+        Trip undated = Trip.Create(TripsHarness.Family, TripName.Create("Someday"), TripDates.None);
 
         harness.Repository
-            .Setup(repository => repository.ListAsync(It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.ListAsync(TripsHarness.Family, It.IsAny<CancellationToken>()))
             .ReturnsAsync([past, undated, upcoming, ongoing]);
 
         Result<IReadOnlyList<TripSummaryDto>, Exception> result = await harness.Mediator.Send(
-            new ListTripsHandler.Query(), TestContext.Current.CancellationToken);
+            new ListTripsHandler.Query(TripsHarness.Family), TestContext.Current.CancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
         result.Value.Select(trip => trip.Name).ShouldBe(["Right now", "Next month", "Someday", "Last winter"]);
@@ -87,7 +87,7 @@ public sealed class TripHandlerTests
     public async Task Reading_an_unknown_trip_reports_not_found()
     {
         Result<TripDetailsDto, Exception> result = await harness.Mediator.Send(
-            new GetTripHandler.Query(Guid.CreateVersion7()), TestContext.Current.CancellationToken);
+            new GetTripHandler.Query(TripsHarness.Family, Guid.CreateVersion7()), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<NotFoundException>();
@@ -101,7 +101,7 @@ public sealed class TripHandlerTests
         Guid electronics = Guid.CreateVersion7();
 
         Result<TripDetailsDto, Exception> result = await harness.Mediator.Send(
-            new SelectTripCategoriesHandler.Command(
+            new SelectTripCategoriesHandler.Command(TripsHarness.Family, 
                 trip.Id,
                 [TripsHarness.ACategory(toiletries, "Toiletries", 4), TripsHarness.ACategory(electronics, "Electronics", 3)]),
             TestContext.Current.CancellationToken);
@@ -118,7 +118,7 @@ public sealed class TripHandlerTests
         Trip trip = harness.GivenTrip();
 
         Result<TripDetailsDto, Exception> result = await harness.Mediator.Send(
-            new SelectTripCategoriesHandler.Command(trip.Id, []), TestContext.Current.CancellationToken);
+            new SelectTripCategoriesHandler.Command(TripsHarness.Family, trip.Id, []), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<DomainValidationException>();
@@ -128,7 +128,7 @@ public sealed class TripHandlerTests
     public async Task Selecting_categories_for_an_unknown_trip_reports_not_found()
     {
         Result<TripDetailsDto, Exception> result = await harness.Mediator.Send(
-            new SelectTripCategoriesHandler.Command(Guid.CreateVersion7(), [TripsHarness.ACategory(Guid.CreateVersion7(), "Toiletries", 1)]),
+            new SelectTripCategoriesHandler.Command(TripsHarness.Family, Guid.CreateVersion7(), [TripsHarness.ACategory(Guid.CreateVersion7(), "Toiletries", 1)]),
             TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
@@ -143,7 +143,7 @@ public sealed class TripHandlerTests
         trip.SelectCategories([TripsHarness.ACategory(toiletries, "Toiletries", 3), TripsHarness.ACategory(Guid.CreateVersion7(), "Electronics", 2)]);
 
         Result<TripDetailsDto, Exception> result = await harness.Mediator.Send(
-            new RemoveTripCategoryHandler.Command(trip.Id, toiletries), TestContext.Current.CancellationToken);
+            new RemoveTripCategoryHandler.Command(TripsHarness.Family, trip.Id, toiletries), TestContext.Current.CancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
         result.Value.Categories.Count.ShouldBe(1);
@@ -162,7 +162,7 @@ public sealed class TripHandlerTests
         ]);
 
         Result<TripDetailsDto, Exception> result = await harness.Mediator.Send(
-            new GetTripHandler.Query(trip.Id), TestContext.Current.CancellationToken);
+            new GetTripHandler.Query(TripsHarness.Family, trip.Id), TestContext.Current.CancellationToken);
 
         result.Value.Items.Select(item => item.Name).ShouldBe(["Oplader", "Shampoo", "Tandpasta"]);
     }
@@ -176,7 +176,7 @@ public sealed class TripHandlerTests
         trip.AdvanceItem(trip.Items[0].Id);
 
         Result<TripDetailsDto, Exception> result = await harness.Mediator.Send(
-            new GetTripHandler.Query(trip.Id), TestContext.Current.CancellationToken);
+            new GetTripHandler.Query(TripsHarness.Family, trip.Id), TestContext.Current.CancellationToken);
 
         result.Value.Categories.Single().HasProgressedItems.ShouldBeTrue();
     }

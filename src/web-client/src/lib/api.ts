@@ -1,19 +1,18 @@
 import "server-only";
 
+import { cache } from "react";
+import { redirect } from "next/navigation";
+import { apiBaseUrl, apiToken } from "@/lib/api-token";
+import { verifySession } from "@/lib/session";
 import type {
   Category,
   CatalogItem,
+  Family,
+  Me,
   TripDetails,
   TripSummary,
   TripItem,
 } from "@/lib/types";
-
-/** Aspire sets `API_BASE_URL`; the fallback keeps a bare `npm run dev` working against a locally started API. */
-function baseUrl(): string {
-  const url = process.env.API_BASE_URL ?? "http://localhost:5080";
-
-  return url.replace(/\/$/, "");
-}
 
 export class ApiError extends Error {
   constructor(
@@ -43,12 +42,50 @@ async function toApiError(response: Response): Promise<ApiError> {
   return new ApiError(message, response.status);
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${baseUrl()}${path}`, {
+async function send(path: string, init?: RequestInit): Promise<Response> {
+  const email = await verifySession();
+
+  return fetch(`${apiBaseUrl()}${path}`, {
     ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${await apiToken(email)}`,
+      ...init?.headers,
+    },
     cache: "no-store",
   });
+}
+
+/**
+ * Who the caller is, or null when the API does not know the account (any more). Memoised per request, so the
+ * navigation and the page share one call.
+ */
+const getMe = cache(async (): Promise<Me | null> => {
+  const response = await send("/api/me");
+
+  if (response.status === 403) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw await toApiError(response);
+  }
+
+  return (await response.json()) as Me;
+});
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await send(path, init);
+
+  if (response.status === 401) {
+    redirect("/inloggen");
+  }
+
+  // A 403 is either "this account has no access at all" (removed member) or a rule such as "only the
+  // administrator edits general categories"; only the first leaves the app.
+  if (response.status === 403 && (await getMe()) === null) {
+    redirect("/geen-toegang");
+  }
 
   if (!response.ok) {
     throw await toApiError(response);
@@ -58,11 +95,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  listCategories: (includeDeleted = false) =>
-    request<Category[]>(`/api/categories?includeDeleted=${includeDeleted}`),
+  me: getMe,
 
-  createCategory: (name: string) =>
-    request<Category>("/api/categories", { method: "POST", body: JSON.stringify({ name }) }),
+  listCategories: (includeDeleted = false, includeSwitchedOff = false) =>
+    request<Category[]>(`/api/categories?includeDeleted=${includeDeleted}&includeSwitchedOff=${includeSwitchedOff}`),
+
+  listGeneralCategories: (includeDeleted = false) =>
+    request<Category[]>(`/api/categories/general?includeDeleted=${includeDeleted}`),
+
+  createCategory: (name: string, general = false) =>
+    request<Category>("/api/categories", { method: "POST", body: JSON.stringify({ name, general }) }),
+
+  switchCategory: (id: string, on: boolean) =>
+    request<Category>(`/api/categories/${id}/switch`, { method: "PUT", body: JSON.stringify({ on }) }),
 
   renameCategory: (id: string, name: string) =>
     request<Category>(`/api/categories/${id}`, { method: "PUT", body: JSON.stringify({ name }) }),
@@ -118,4 +163,18 @@ export const api = {
 
   restoreTripItem: (tripId: string, itemId: string) =>
     request<TripItem>(`/api/trips/${tripId}/items/${itemId}/restore`, { method: "POST" }),
+
+  listFamilies: () => request<Family[]>("/api/admin/families"),
+
+  createFamily: (name: string) =>
+    request<Family>("/api/admin/families", { method: "POST", body: JSON.stringify({ name }) }),
+
+  renameFamily: (id: string, name: string) =>
+    request<Family>(`/api/admin/families/${id}`, { method: "PUT", body: JSON.stringify({ name }) }),
+
+  addMember: (familyId: string, email: string) =>
+    request<Family>(`/api/admin/families/${familyId}/members`, { method: "POST", body: JSON.stringify({ email }) }),
+
+  removeMember: (familyId: string, email: string) =>
+    request<Family>(`/api/admin/families/${familyId}/members/${encodeURIComponent(email)}`, { method: "DELETE" }),
 };

@@ -19,6 +19,9 @@ internal sealed class TripConfiguration : IEntityTypeConfiguration<Trip>
             .HasMaxLength(TripName.MaxLength)
             .IsRequired();
 
+        builder.Property(trip => trip.FamilyId);
+        builder.HasIndex(trip => trip.FamilyId);
+
         builder.OwnsOne(trip => trip.Dates, dates =>
         {
             dates.Property(value => value.Start).HasColumnName("StartDate");

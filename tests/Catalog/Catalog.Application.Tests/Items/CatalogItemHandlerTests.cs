@@ -1,4 +1,4 @@
-using Catalog.Application.Contracts;
+﻿using Catalog.Application.Contracts;
 using Catalog.Application.Items;
 using Catalog.Domain.Categories;
 using Catalog.Domain.Items;
@@ -20,7 +20,7 @@ public sealed class CatalogItemHandlerTests
         Category category = harness.GivenCategory();
 
         Result<CatalogItemDto, Exception> result = await harness.Mediator.Send(
-            new CreateCatalogItemHandler.Command(category.Id, "Socks", 7, "pair"), TestContext.Current.CancellationToken);
+            new CreateCatalogItemHandler.Command(CatalogHarness.Member, category.Id, "Socks", 7, "pair"), TestContext.Current.CancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
         result.Value.Name.ShouldBe("Socks");
@@ -35,7 +35,7 @@ public sealed class CatalogItemHandlerTests
     public async Task Creating_an_item_in_an_unknown_category_reports_not_found()
     {
         Result<CatalogItemDto, Exception> result = await harness.Mediator.Send(
-            new CreateCatalogItemHandler.Command(Guid.CreateVersion7(), "Socks", null, null), TestContext.Current.CancellationToken);
+            new CreateCatalogItemHandler.Command(CatalogHarness.Member, Guid.CreateVersion7(), "Socks", null, null), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<NotFoundException>();
@@ -48,7 +48,7 @@ public sealed class CatalogItemHandlerTests
         category.Delete(DateTimeOffset.UtcNow);
 
         Result<CatalogItemDto, Exception> result = await harness.Mediator.Send(
-            new CreateCatalogItemHandler.Command(category.Id, "Socks", null, null), TestContext.Current.CancellationToken);
+            new CreateCatalogItemHandler.Command(CatalogHarness.Member, category.Id, "Socks", null, null), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<DomainValidationException>();
@@ -63,7 +63,7 @@ public sealed class CatalogItemHandlerTests
             .ReturnsAsync(true);
 
         Result<CatalogItemDto, Exception> result = await harness.Mediator.Send(
-            new CreateCatalogItemHandler.Command(category.Id, "toothbrush", null, null), TestContext.Current.CancellationToken);
+            new CreateCatalogItemHandler.Command(CatalogHarness.Member, category.Id, "toothbrush", null, null), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<DomainValidationException>();
@@ -76,7 +76,7 @@ public sealed class CatalogItemHandlerTests
         Category category = harness.GivenCategory();
 
         Result<CatalogItemDto, Exception> result = await harness.Mediator.Send(
-            new CreateCatalogItemHandler.Command(category.Id, "Socks", null, "pair"), TestContext.Current.CancellationToken);
+            new CreateCatalogItemHandler.Command(CatalogHarness.Member, category.Id, "Socks", null, "pair"), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<DomainValidationException>();
@@ -91,7 +91,7 @@ public sealed class CatalogItemHandlerTests
             .ThrowsAsync(new InvalidOperationException("database unavailable"));
 
         Result<CatalogItemDto, Exception> result = await harness.Mediator.Send(
-            new CreateCatalogItemHandler.Command(category.Id, "Socks", null, null), TestContext.Current.CancellationToken);
+            new CreateCatalogItemHandler.Command(CatalogHarness.Member, category.Id, "Socks", null, null), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<InvalidOperationException>();
@@ -104,7 +104,7 @@ public sealed class CatalogItemHandlerTests
         CatalogItem item = harness.GivenItem(category, "Towel");
 
         Result<CatalogItemDto, Exception> result = await harness.Mediator.Send(
-            new UpdateCatalogItemHandler.Command(item.Id, "Beach towel", 2, null), TestContext.Current.CancellationToken);
+            new UpdateCatalogItemHandler.Command(CatalogHarness.Member, item.Id, "Beach towel", 2, null), TestContext.Current.CancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
         result.Value.Name.ShouldBe("Beach towel");
@@ -116,7 +116,7 @@ public sealed class CatalogItemHandlerTests
     public async Task Updating_an_unknown_item_reports_not_found()
     {
         Result<CatalogItemDto, Exception> result = await harness.Mediator.Send(
-            new UpdateCatalogItemHandler.Command(Guid.CreateVersion7(), "Towel", null, null), TestContext.Current.CancellationToken);
+            new UpdateCatalogItemHandler.Command(CatalogHarness.Member, Guid.CreateVersion7(), "Towel", null, null), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<NotFoundException>();
@@ -132,7 +132,7 @@ public sealed class CatalogItemHandlerTests
             .ReturnsAsync(true);
 
         Result<CatalogItemDto, Exception> result = await harness.Mediator.Send(
-            new UpdateCatalogItemHandler.Command(item.Id, "Toothbrush", null, null), TestContext.Current.CancellationToken);
+            new UpdateCatalogItemHandler.Command(CatalogHarness.Member, item.Id, "Toothbrush", null, null), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<DomainValidationException>();
@@ -147,7 +147,7 @@ public sealed class CatalogItemHandlerTests
         CatalogItem item = harness.GivenItem(source, "Charger");
 
         Result<CatalogItemDto, Exception> result = await harness.Mediator.Send(
-            new MoveCatalogItemHandler.Command(item.Id, target.Id), TestContext.Current.CancellationToken);
+            new MoveCatalogItemHandler.Command(CatalogHarness.Member, item.Id, target.Id), TestContext.Current.CancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
         result.Value.CategoryId.ShouldBe(target.Id);
@@ -160,7 +160,7 @@ public sealed class CatalogItemHandlerTests
         CatalogItem item = harness.GivenItem(source, "Charger");
 
         Result<CatalogItemDto, Exception> result = await harness.Mediator.Send(
-            new MoveCatalogItemHandler.Command(item.Id, Guid.CreateVersion7()), TestContext.Current.CancellationToken);
+            new MoveCatalogItemHandler.Command(CatalogHarness.Member, item.Id, Guid.CreateVersion7()), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<NotFoundException>();
@@ -173,12 +173,12 @@ public sealed class CatalogItemHandlerTests
         CatalogItem item = harness.GivenItem(category);
 
         Result<CatalogItemDto, Exception> removed = await harness.Mediator.Send(
-            new RemoveCatalogItemHandler.Command(item.Id), TestContext.Current.CancellationToken);
+            new RemoveCatalogItemHandler.Command(CatalogHarness.Member, item.Id), TestContext.Current.CancellationToken);
         removed.IsSuccess.ShouldBeTrue();
         removed.Value.IsDeleted.ShouldBeTrue();
 
         Result<CatalogItemDto, Exception> restored = await harness.Mediator.Send(
-            new RestoreCatalogItemHandler.Command(item.Id), TestContext.Current.CancellationToken);
+            new RestoreCatalogItemHandler.Command(CatalogHarness.Member, item.Id), TestContext.Current.CancellationToken);
         restored.IsSuccess.ShouldBeTrue();
         restored.Value.IsDeleted.ShouldBeFalse();
     }
@@ -192,7 +192,7 @@ public sealed class CatalogItemHandlerTests
             .ReturnsAsync([CatalogItem.Create(category, ItemName.Create("Toothbrush"), null)]);
 
         Result<IReadOnlyList<CatalogItemDto>, Exception> result = await harness.Mediator.Send(
-            new ListCatalogItemsHandler.Query(category.Id), TestContext.Current.CancellationToken);
+            new ListCatalogItemsHandler.Query(CatalogHarness.Member, category.Id), TestContext.Current.CancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
         result.Value.Single().Name.ShouldBe("Toothbrush");
@@ -202,7 +202,7 @@ public sealed class CatalogItemHandlerTests
     public async Task Listing_items_for_no_categories_returns_nothing_without_hitting_the_repository()
     {
         Result<IReadOnlyList<CatalogItemDto>, Exception> result = await harness.Mediator.Send(
-            new ListCatalogItemsForCategoriesHandler.Query([]), TestContext.Current.CancellationToken);
+            new ListCatalogItemsForCategoriesHandler.Query(CatalogHarness.Member, []), TestContext.Current.CancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
         result.Value.ShouldBeEmpty();
@@ -225,7 +225,7 @@ public sealed class CatalogItemHandlerTests
             ]);
 
         Result<IReadOnlyList<CatalogItemDto>, Exception> result = await harness.Mediator.Send(
-            new ListCatalogItemsForCategoriesHandler.Query([first.Id, second.Id]), TestContext.Current.CancellationToken);
+            new ListCatalogItemsForCategoriesHandler.Query(CatalogHarness.Member, [first.Id, second.Id]), TestContext.Current.CancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
         result.Value.Count.ShouldBe(2);

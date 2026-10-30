@@ -1,4 +1,5 @@
 using Catalog.Application.Contracts;
+using Catalog.Domain;
 using Catalog.Domain.Categories;
 using MediatR;
 using Shared.Validation;
@@ -9,7 +10,7 @@ namespace Catalog.Application.Categories;
 public sealed class RenameCategoryHandler(ICategoryRepository repository)
     : IRequestHandler<RenameCategoryHandler.Command, Result>
 {
-    public sealed record Command(Guid Id, string? Name) : IRequest<Result>;
+    public sealed record Command(CatalogActor Actor, Guid Id, string? Name) : IRequest<Result>;
 
     public async Task<Result> Handle(Command request, CancellationToken cancellationToken)
     {
@@ -17,12 +18,12 @@ public sealed class RenameCategoryHandler(ICategoryRepository repository)
 
         Category? category = await repository.FindAsync(request.Id, cancellationToken);
 
-        if (category is null)
-            return NotFoundException.For("Categorie", request.Id);
+        if (CatalogAccessRules.Check(category, request.Id, request.Actor, CatalogAccess.Edit) is { } denied)
+            return denied;
 
         CategoryName name = CategoryName.Create(request.Name);
 
-        if (await repository.ExistsWithNameAsync(name, request.Id, cancellationToken))
+        if (await repository.ExistsWithNameAsync(name, category!.FamilyId, request.Id, cancellationToken))
             return new DomainValidationException($"Er bestaat al een categorie met de naam '{name}'.");
 
         category.Rename(name);

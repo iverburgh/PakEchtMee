@@ -1,4 +1,4 @@
-using Shared.Validation;
+﻿using Shared.Validation;
 using Shouldly;
 using Xunit;
 
@@ -6,12 +6,14 @@ namespace Trips.Domain.Tests;
 
 public sealed class TripTests
 {
+    private static readonly Guid Family = Guid.CreateVersion7();
+
     private static readonly DateTimeOffset Now = new(2026, 7, 4, 10, 0, 0, TimeSpan.Zero);
     private static readonly Guid ToiletriesId = Guid.CreateVersion7();
     private static readonly Guid ElectronicsId = Guid.CreateVersion7();
 
     private static Trip ATrip(string name = "Summer France")
-        => Trip.Create(TripName.Create(name), TripDates.None);
+        => Trip.Create(Family, TripName.Create(name), TripDates.None);
 
     private static CategorySelection Toiletries(int itemCount = 4)
         => new(ToiletriesId, "Toiletries", [.. Enumerable.Range(1, itemCount).Select(index => new CatalogItemSnapshot(Guid.CreateVersion7(), $"Toiletry {index}", null, null))]);
@@ -243,12 +245,20 @@ public sealed class TripTests
     {
         Guid id = Guid.CreateVersion7();
 
-        Trip trip = Trip.Create(id, TripName.Create("Summer France"), TripDates.None);
+        Trip trip = Trip.Create(id, Family, TripName.Create("Summer France"), TripDates.None);
 
         trip.Id.ShouldBe(id);
     }
 
     [Fact]
     public void A_trip_cannot_be_created_with_an_empty_id()
+        => Should.Throw<ArgumentException>(() => Trip.Create(Guid.Empty, Family, TripName.Create("Summer France"), TripDates.None));
+
+    [Fact]
+    public void A_trip_belongs_to_its_family()
+        => ATrip().FamilyId.ShouldBe(Family);
+
+    [Fact]
+    public void A_trip_needs_a_family()
         => Should.Throw<ArgumentException>(() => Trip.Create(Guid.Empty, TripName.Create("Summer France"), TripDates.None));
 }

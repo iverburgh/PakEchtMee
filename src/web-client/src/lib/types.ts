@@ -14,6 +14,22 @@ export type Category = {
   id: string;
   name: string;
   isDeleted: boolean;
+  /** Maintained by the administrator and shared with every family; read-only for members. */
+  isGeneral: boolean;
+  /** For a general category: whether the caller's family uses it. Own categories are always on. */
+  isSwitchedOn: boolean;
+};
+
+export type Me = {
+  email: string;
+  isAdministrator: boolean;
+  family: { id: string; name: string } | null;
+};
+
+export type Family = {
+  id: string;
+  name: string;
+  members: string[];
 };
 
 export type CatalogItem = {

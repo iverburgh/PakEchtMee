@@ -9,13 +9,13 @@ namespace Trips.Application.Items;
 public sealed class DeleteTripItemHandler(ITripRepository repository, TimeProvider timeProvider)
     : IRequestHandler<DeleteTripItemHandler.Command, Result>
 {
-    public sealed record Command(Guid TripId, Guid ItemId) : IRequest<Result>;
+    public sealed record Command(Guid FamilyId, Guid TripId, Guid ItemId) : IRequest<Result>;
 
     public async Task<Result> Handle(Command request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        Trip? trip = await repository.FindAsync(request.TripId, cancellationToken);
+        Trip? trip = await repository.FindAsync(request.TripId, request.FamilyId, cancellationToken);
 
         if (trip is null)
             return NotFoundException.For("Uitje", request.TripId);

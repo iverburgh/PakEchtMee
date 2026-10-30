@@ -27,14 +27,20 @@ import {
 import { ItemDialog } from "@/components/catalog/item-dialog";
 import { MoveItemDialog } from "@/components/catalog/move-item-dialog";
 
+/**
+ * `readOnly` is for a general category seen by a family: the items can be browsed, but only the administrator
+ * changes them (in the administration).
+ */
 export function ItemList({
   categoryId,
   items,
   categories,
+  readOnly = false,
 }: {
   categoryId: string;
   items: CatalogItem[];
   categories: Category[];
+  readOnly?: boolean;
 }) {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<CatalogItem | null>(null);
@@ -43,7 +49,7 @@ export function ItemList({
   const router = useRouter();
 
   const live = items.filter((item) => !item.isDeleted);
-  const removed = items.filter((item) => item.isDeleted);
+  const removed = readOnly ? [] : items.filter((item) => item.isDeleted);
 
   const runAction = (action: () => Promise<ActionResult<unknown>>, success: string) =>
     startTransition(async () => {
@@ -61,10 +67,17 @@ export function ItemList({
 
   return (
     <div className="flex flex-col gap-4">
-      <Button onClick={() => setCreating(true)} className="min-h-11 self-start">
-        <Plus aria-hidden />
-        Nieuw item
-      </Button>
+      {readOnly ? (
+        <p className="text-muted-foreground text-sm">
+          Dit is een algemene categorie. De beheerder houdt de spullen bij; je kunt de categorie wel aan- of uitzetten
+          in de catalogus.
+        </p>
+      ) : (
+        <Button onClick={() => setCreating(true)} className="min-h-11 self-start">
+          <Plus aria-hidden />
+          Nieuw item
+        </Button>
+      )}
 
       {live.length === 0 && removed.length === 0 ? (
         <Card className="flex flex-col items-center gap-3 p-8 text-center">
@@ -84,6 +97,7 @@ export function ItemList({
                   {item.name}
                   {amount ? <span className="text-muted-foreground"> {amount}</span> : null}
                 </span>
+                {readOnly ? null : (
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     render={
@@ -110,6 +124,7 @@ export function ItemList({
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                )}
               </Card>
             </li>
           );

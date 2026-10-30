@@ -28,6 +28,10 @@ internal static class ResultExtensions
             title: "Niet gevonden",
             detail: error.Message,
             statusCode: StatusCodes.Status404NotFound),
+        ForbiddenException => Results.Problem(
+            title: "Geen toegang",
+            detail: error.Message,
+            statusCode: StatusCodes.Status403Forbidden),
         DbUpdateConcurrencyException => Results.Problem(
             title: "Conflict",
             detail: "Dit item is ondertussen door een andere actie gewijzigd. Ververs en probeer het opnieuw.",

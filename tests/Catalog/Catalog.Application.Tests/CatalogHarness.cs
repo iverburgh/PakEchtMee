@@ -1,3 +1,4 @@
+﻿using Catalog.Domain;
 using Catalog.Domain.Categories;
 using Catalog.Domain.Items;
 using MediatR;
@@ -19,7 +20,25 @@ internal sealed class CatalogHarness
 
         Services = services.BuildServiceProvider();
         Mediator = Services.GetRequiredService<IMediator>();
+
+        // Nothing is switched off unless a test says so, and lookups by several ids see every given category.
+        Categories
+            .Setup(repository => repository.ListSwitchedOffAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => SwitchedOff);
+        Categories
+            .Setup(repository => repository.FindManyAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyCollection<Guid> ids, CancellationToken _) => [.. given.Where(category => ids.Contains(category.Id))]);
     }
+
+    private readonly List<Category> given = [];
+
+    /// <summary>General categories the default family switched off.</summary>
+    public HashSet<Guid> SwitchedOff { get; } = [];
+
+    /// <summary>The family the default actor belongs to; <see cref="GivenCategory"/> creates its own categories.</summary>
+    public static readonly Guid Family = Guid.CreateVersion7();
+
+    public static CatalogActor Member => CatalogActor.MemberOf(Family);
 
     public Mock<ICategoryRepository> Categories { get; } = new();
 
@@ -29,9 +48,15 @@ internal sealed class CatalogHarness
 
     public IMediator Mediator { get; }
 
-    public Category GivenCategory(string name = "Toiletries")
+    public Category GivenCategory(string name = "Toiletries") => Given(Category.CreateForFamily(Family, CategoryName.Create(name)));
+
+    public Category GivenGeneralCategory(string name = "Tent") => Given(Category.Create(CategoryName.Create(name)));
+
+    public Category GivenCategoryOfAnotherFamily(string name = "Eigen spullen") => Given(Category.CreateForFamily(Guid.CreateVersion7(), CategoryName.Create(name)));
+
+    private Category Given(Category category)
     {
-        Category category = Category.Create(CategoryName.Create(name));
+        given.Add(category);
         Categories.Setup(repository => repository.FindAsync(category.Id, It.IsAny<CancellationToken>())).ReturnsAsync(category);
 
         return category;

@@ -12,7 +12,7 @@ public sealed class TripEndpointsTests(ApiFixture fixture) : IClassFixture<ApiFi
 {
     private static StringContent NoBody => new("{}", Encoding.UTF8, "application/json");
 
-    private readonly HttpClient client = fixture.CreateClient();
+    private readonly HttpClient client = fixture.ClientFor(ApiFixture.MemberOfA);
 
     private async Task<Guid> GivenCategoryWithItemsAsync(int itemCount)
     {

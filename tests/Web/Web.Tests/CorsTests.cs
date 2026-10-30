@@ -19,7 +19,7 @@ public sealed class CorsTests(ApiFixture fixture) : IClassFixture<ApiFixture>
     [Fact]
     public async Task The_configured_frontend_origin_is_allowed()
     {
-        HttpResponseMessage response = await fixture.CreateClient()
+        HttpResponseMessage response = await fixture.ClientFor(null)
             .SendAsync(Preflight("http://localhost:3000"), TestContext.Current.CancellationToken);
 
         response.Headers.TryGetValues("Access-Control-Allow-Origin", out IEnumerable<string>? allowed).ShouldBeTrue();
@@ -29,7 +29,7 @@ public sealed class CorsTests(ApiFixture fixture) : IClassFixture<ApiFixture>
     [Fact]
     public async Task An_unlisted_origin_gets_no_cors_approval()
     {
-        HttpResponseMessage response = await fixture.CreateClient()
+        HttpResponseMessage response = await fixture.ClientFor(null)
             .SendAsync(Preflight("https://evil.example"), TestContext.Current.CancellationToken);
 
         response.Headers.Contains("Access-Control-Allow-Origin").ShouldBeFalse();

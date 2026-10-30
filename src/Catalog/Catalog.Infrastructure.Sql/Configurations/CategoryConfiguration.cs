@@ -24,8 +24,11 @@ internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
             .IsRequired();
 
         builder.Property(category => category.DeletedAt);
+        builder.Property(category => category.FamilyId);
 
-        builder.HasIndex(category => category.Name)
+        // Unique per scope. SQL Server treats NULLs as equal in a unique index, so general names (FamilyId NULL)
+        // are unique among themselves exactly like each family's own names.
+        builder.HasIndex(category => new { category.FamilyId, category.Name })
             .IsUnique()
             .HasFilter("[DeletedAt] IS NULL");
     }

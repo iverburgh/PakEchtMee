@@ -7,7 +7,7 @@ import { ItemList } from "@/components/catalog/item-list";
 export default async function CategoryItemsPage({ params }: PageProps<"/catalogus/[categoryId]">) {
   const { categoryId } = await params;
   const [categories, items] = await Promise.all([
-    api.listCategories(true),
+    api.listCategories(true, true),
     api.listItems(categoryId, true),
   ]);
 
@@ -34,7 +34,8 @@ export default async function CategoryItemsPage({ params }: PageProps<"/catalogu
         <ItemList
           categoryId={categoryId}
           items={items}
-          categories={categories.filter((candidate) => !candidate.isDeleted)}
+          readOnly={category.isGeneral}
+          categories={categories.filter((candidate) => !candidate.isDeleted && candidate.isGeneral === category.isGeneral)}
         />
       </main>
     </>

@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Shared.Tests;
 using Shouldly;
 using Trips.Domain;
@@ -11,6 +11,8 @@ namespace Trips.Infrastructure.Sql.Tests.Seeding;
 [IntegrationTest]
 public sealed class TripsSeederTests(SqlServerTestContainerFixture server)
 {
+    private static readonly Guid Family = Guid.CreateVersion7();
+
     private static readonly Guid TripId = Guid.CreateVersion7();
     private static readonly Guid CategoryId = Guid.CreateVersion7();
     private static readonly Guid SwimmingId = Guid.CreateVersion7();
@@ -21,6 +23,7 @@ public sealed class TripsSeederTests(SqlServerTestContainerFixture server)
 
     private static TripSeed AWinterTrip() => new(
         TripId,
+        Family,
         "Wintersport Frankrijk 2025",
         [new CategorySelection(
             CategoryId,
@@ -70,6 +73,7 @@ public sealed class TripsSeederTests(SqlServerTestContainerFixture server)
         added.ShouldBeTrue();
         Trip trip = await LoadAsync(createContext);
         trip.Name.Value.ShouldBe("Wintersport Frankrijk 2025");
+        trip.FamilyId.ShouldBe(Family);
         trip.Dates.ShouldBe(TripDates.None);
         trip.Categories.Count.ShouldBe(1);
         trip.Items.Count.ShouldBe(3);

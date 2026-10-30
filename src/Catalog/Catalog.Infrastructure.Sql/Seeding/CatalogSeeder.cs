@@ -10,7 +10,7 @@ public sealed record CatalogSeedResult(int CategoriesAdded, int ItemsAdded);
 
 /// <summary>
 /// Inserts <see cref="CatalogSeedData"/> records that do not exist yet. Existing records are matched by id including
-/// removed ones, so whatever the user renamed, moved or removed stays that way; name clashes with user data are skipped.
+/// removed ones, so whatever was renamed, moved or removed stays that way; name clashes in the general catalog are skipped.
 /// </summary>
 public sealed class CatalogSeeder(CatalogDbContext context, ILogger<CatalogSeeder> logger)
 {
@@ -30,8 +30,9 @@ public sealed class CatalogSeeder(CatalogDbContext context, ILogger<CatalogSeede
             .Select(item => item.Id)
             .ToListAsync(cancellationToken)];
 
+        // The seed is the general catalog, so only general names can clash; a family may use the same names for its own.
         List<string> liveCategoryNames = await context.Categories
-            .Where(category => category.DeletedAt == null)
+            .Where(category => category.DeletedAt == null && category.FamilyId == null)
             .Select(category => category.Name.Value)
             .ToListAsync(cancellationToken);
 

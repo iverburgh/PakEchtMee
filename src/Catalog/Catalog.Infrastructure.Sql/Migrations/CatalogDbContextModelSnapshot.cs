@@ -31,6 +31,9 @@ namespace Catalog.Infrastructure.Sql.Migrations
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<Guid?>("FamilyId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(60)
@@ -39,11 +42,26 @@ namespace Catalog.Infrastructure.Sql.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
+                    b.HasIndex("FamilyId", "Name")
                         .IsUnique()
                         .HasFilter("[DeletedAt] IS NULL");
 
                     b.ToTable("Categories", "catalog");
+                });
+
+            modelBuilder.Entity("Catalog.Domain.Categories.GeneralCategoryOptOut", b =>
+                {
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("FamilyId", "CategoryId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.ToTable("FamilyCategoryOptOuts", "catalog");
                 });
 
             modelBuilder.Entity("Catalog.Domain.Items.CatalogItem", b =>
@@ -72,6 +90,15 @@ namespace Catalog.Infrastructure.Sql.Migrations
                         .HasFilter("[DeletedAt] IS NULL");
 
                     b.ToTable("Items", "catalog");
+                });
+
+            modelBuilder.Entity("Catalog.Domain.Categories.GeneralCategoryOptOut", b =>
+                {
+                    b.HasOne("Catalog.Domain.Categories.Category", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Catalog.Domain.Items.CatalogItem", b =>

@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { PageHeader } from "@/components/page-header";
 import { CreateTripDialog } from "@/components/trips/create-trip-dialog";
+import { NoFamilyNotice } from "@/components/no-family-notice";
 
 function formatRange(trip: TripSummary): string | null {
   const format = (value: string) =>
@@ -23,6 +24,19 @@ function formatRange(trip: TripSummary): string | null {
 }
 
 export default async function TripsPage() {
+  const me = await api.me();
+
+  if (me && !me.family) {
+    return (
+      <>
+        <PageHeader title="Uitjes" description="Je vakanties en dagjes weg." />
+        <main className="px-4">
+          <NoFamilyNotice />
+        </main>
+      </>
+    );
+  }
+
   const trips = await api.listTrips();
 
   return (

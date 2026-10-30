@@ -1,6 +1,7 @@
 using Catalog.Application.Categories;
 using Catalog.Application.Contracts;
 using Catalog.Application.Items;
+using Catalog.Domain;
 using CSharpFunctionalExtensions;
 using MediatR;
 using Trips.Domain;
@@ -13,23 +14,28 @@ namespace Web;
 /// </summary>
 internal static class CategorySelections
 {
-    /// <summary>Returns a selection for every requested category that exists and is not removed; unknown ids are left out.</summary>
+    /// <summary>
+    /// Returns a selection for every requested category the actor's family may use - its own and its switched-on general
+    /// categories, not removed; any other id is left out, which is what keeps a foreign category off a trip.
+    /// </summary>
     public static async Task<Result<IReadOnlyList<CategorySelection>, Exception>> ReadAsync(
         ISender sender,
+        CatalogActor actor,
         IReadOnlyList<Guid> categoryIds,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(sender);
+        ArgumentNullException.ThrowIfNull(actor);
         ArgumentNullException.ThrowIfNull(categoryIds);
 
         Result<IReadOnlyList<CategoryDto>, Exception> categories =
-            await sender.Send(new ListCategoriesHandler.Query(), cancellationToken);
+            await sender.Send(new ListCategoriesHandler.Query(actor), cancellationToken);
 
         if (categories.IsFailure)
             return categories.Error;
 
         Result<IReadOnlyList<CatalogItemDto>, Exception> items =
-            await sender.Send(new ListCatalogItemsForCategoriesHandler.Query(categoryIds), cancellationToken);
+            await sender.Send(new ListCatalogItemsForCategoriesHandler.Query(actor, categoryIds), cancellationToken);
 
         if (items.IsFailure)
             return items.Error;

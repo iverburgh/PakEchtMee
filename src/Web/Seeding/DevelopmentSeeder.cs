@@ -1,5 +1,7 @@
+using Catalog.Domain;
 using Catalog.Infrastructure.Sql.Seeding;
 using CSharpFunctionalExtensions;
+using Families.Domain;
 using MediatR;
 using Trips.Domain;
 using Trips.Infrastructure.Sql.Seeding;
@@ -74,12 +76,12 @@ internal sealed class DevelopmentSeeder(
         CancellationToken cancellationToken)
     {
         Result<IReadOnlyList<CategorySelection>, Exception> selections =
-            await CategorySelections.ReadAsync(sender, categoryIds, cancellationToken);
+            await CategorySelections.ReadAsync(sender, CatalogActor.MemberOf(KnownFamilies.Verburgh), categoryIds, cancellationToken);
 
         // A broken seed must stop startup rather than leave a half-seeded database unnoticed.
         if (selections.IsFailure)
             throw new InvalidOperationException($"Reading the catalog for seed trip '{name}' failed.", selections.Error);
 
-        return await tripsSeeder.SeedAsync(new TripSeed(id, name, selections.Value, deletedSourceItemIds), cancellationToken);
+        return await tripsSeeder.SeedAsync(new TripSeed(id, KnownFamilies.Verburgh, name, selections.Value, deletedSourceItemIds), cancellationToken);
     }
 }

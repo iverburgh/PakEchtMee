@@ -1,4 +1,4 @@
-using CSharpFunctionalExtensions;
+﻿using CSharpFunctionalExtensions;
 using Moq;
 using Shared.Validation;
 using Shouldly;
@@ -28,14 +28,14 @@ public sealed class TripItemStatusHandlerTests
         Guid itemId = trip.Items[0].Id;
 
         Result<TripItemDto, Exception> prepared = await harness.Mediator.Send(
-            new AdvanceTripItemHandler.Command(trip.Id, itemId), TestContext.Current.CancellationToken);
+            new AdvanceTripItemHandler.Command(TripsHarness.Family, trip.Id, itemId), TestContext.Current.CancellationToken);
         prepared.Value.Status.ShouldBe("Prepared");
         prepared.Value.NextStatus.ShouldBe("Packed");
         prepared.Value.PreviousStatus.ShouldBe("Active");
 
-        await harness.Mediator.Send(new AdvanceTripItemHandler.Command(trip.Id, itemId), TestContext.Current.CancellationToken);
+        await harness.Mediator.Send(new AdvanceTripItemHandler.Command(TripsHarness.Family, trip.Id, itemId), TestContext.Current.CancellationToken);
         Result<TripItemDto, Exception> loaded = await harness.Mediator.Send(
-            new AdvanceTripItemHandler.Command(trip.Id, itemId), TestContext.Current.CancellationToken);
+            new AdvanceTripItemHandler.Command(TripsHarness.Family, trip.Id, itemId), TestContext.Current.CancellationToken);
 
         loaded.Value.Status.ShouldBe("Loaded");
         loaded.Value.NextStatus.ShouldBeNull();
@@ -51,7 +51,7 @@ public sealed class TripItemStatusHandlerTests
         trip.AdvanceItem(itemId);
 
         Result<TripItemDto, Exception> result = await harness.Mediator.Send(
-            new AdvanceTripItemHandler.Command(trip.Id, itemId), TestContext.Current.CancellationToken);
+            new AdvanceTripItemHandler.Command(TripsHarness.Family, trip.Id, itemId), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<DomainValidationException>();
@@ -67,7 +67,7 @@ public sealed class TripItemStatusHandlerTests
         trip.AdvanceItem(itemId);
 
         Result<TripItemDto, Exception> result = await harness.Mediator.Send(
-            new RevertTripItemHandler.Command(trip.Id, itemId), TestContext.Current.CancellationToken);
+            new RevertTripItemHandler.Command(TripsHarness.Family, trip.Id, itemId), TestContext.Current.CancellationToken);
 
         result.Value.Status.ShouldBe("Prepared");
     }
@@ -78,7 +78,7 @@ public sealed class TripItemStatusHandlerTests
         Trip trip = GivenTripWithOneItem();
 
         Result<TripItemDto, Exception> result = await harness.Mediator.Send(
-            new RevertTripItemHandler.Command(trip.Id, trip.Items[0].Id), TestContext.Current.CancellationToken);
+            new RevertTripItemHandler.Command(TripsHarness.Family, trip.Id, trip.Items[0].Id), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<DomainValidationException>();
@@ -93,12 +93,12 @@ public sealed class TripItemStatusHandlerTests
         trip.AdvanceItem(itemId);
 
         Result<TripItemDto, Exception> deleted = await harness.Mediator.Send(
-            new DeleteTripItemHandler.Command(trip.Id, itemId), TestContext.Current.CancellationToken);
+            new DeleteTripItemHandler.Command(TripsHarness.Family, trip.Id, itemId), TestContext.Current.CancellationToken);
         deleted.Value.Status.ShouldBe(TripItemDto.DeletedStatus);
         deleted.Value.NextStatus.ShouldBeNull();
 
         Result<TripItemDto, Exception> restored = await harness.Mediator.Send(
-            new RestoreTripItemHandler.Command(trip.Id, itemId), TestContext.Current.CancellationToken);
+            new RestoreTripItemHandler.Command(TripsHarness.Family, trip.Id, itemId), TestContext.Current.CancellationToken);
         restored.Value.Status.ShouldBe("Packed");
     }
 
@@ -108,7 +108,7 @@ public sealed class TripItemStatusHandlerTests
         Trip trip = GivenTripWithOneItem();
 
         Result<TripItemDto, Exception> result = await harness.Mediator.Send(
-            new AdvanceTripItemHandler.Command(trip.Id, Guid.CreateVersion7()), TestContext.Current.CancellationToken);
+            new AdvanceTripItemHandler.Command(TripsHarness.Family, trip.Id, Guid.CreateVersion7()), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<NotFoundException>();
@@ -118,7 +118,7 @@ public sealed class TripItemStatusHandlerTests
     public async Task An_unknown_trip_reports_not_found()
     {
         Result<TripItemDto, Exception> result = await harness.Mediator.Send(
-            new AdvanceTripItemHandler.Command(Guid.CreateVersion7(), Guid.CreateVersion7()), TestContext.Current.CancellationToken);
+            new AdvanceTripItemHandler.Command(TripsHarness.Family, Guid.CreateVersion7(), Guid.CreateVersion7()), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<NotFoundException>();
@@ -133,7 +133,7 @@ public sealed class TripItemStatusHandlerTests
             .ThrowsAsync(new InvalidOperationException("database unavailable"));
 
         Result<TripItemDto, Exception> result = await harness.Mediator.Send(
-            new AdvanceTripItemHandler.Command(trip.Id, trip.Items[0].Id), TestContext.Current.CancellationToken);
+            new AdvanceTripItemHandler.Command(TripsHarness.Family, trip.Id, trip.Items[0].Id), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<InvalidOperationException>();

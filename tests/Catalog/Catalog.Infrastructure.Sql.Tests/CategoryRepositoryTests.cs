@@ -1,4 +1,4 @@
-using Catalog.Domain.Categories;
+﻿using Catalog.Domain.Categories;
 using Catalog.Infrastructure.Sql.Repositories;
 using Shared.Tests;
 using Shouldly;
@@ -81,8 +81,8 @@ public sealed class CategoryRepositoryTests(CatalogDatabaseFixture fixture) : IC
         await using (CatalogDbContext context = fixture.CreateContext())
         {
             CategoryRepository repository = new(context);
-            (await repository.ListAsync(false, TestContext.Current.CancellationToken)).ShouldNotContain(category => category.Id == created.Id);
-            (await repository.ListAsync(true, TestContext.Current.CancellationToken)).ShouldContain(category => category.Id == created.Id);
+            (await repository.ListGeneralAsync(false, TestContext.Current.CancellationToken)).ShouldNotContain(category => category.Id == created.Id);
+            (await repository.ListGeneralAsync(true, TestContext.Current.CancellationToken)).ShouldContain(category => category.Id == created.Id);
         }
 
         await using (CatalogDbContext context = fixture.CreateContext())
@@ -94,7 +94,7 @@ public sealed class CategoryRepositoryTests(CatalogDatabaseFixture fixture) : IC
         }
 
         await using CatalogDbContext verification = fixture.CreateContext();
-        (await new CategoryRepository(verification).ListAsync(false, TestContext.Current.CancellationToken))
+        (await new CategoryRepository(verification).ListGeneralAsync(false, TestContext.Current.CancellationToken))
             .ShouldContain(category => category.Id == created.Id);
     }
 
@@ -107,8 +107,8 @@ public sealed class CategoryRepositoryTests(CatalogDatabaseFixture fixture) : IC
         await using CatalogDbContext context = fixture.CreateContext();
         CategoryRepository repository = new(context);
 
-        (await repository.ExistsWithNameAsync(AName(name.ToUpperInvariant()), null, TestContext.Current.CancellationToken)).ShouldBeTrue();
-        (await repository.ExistsWithNameAsync(AName(name.Replace("Kaarsen", "Käarsen", StringComparison.Ordinal)), null, TestContext.Current.CancellationToken)).ShouldBeTrue();
+        (await repository.ExistsWithNameAsync(AName(name.ToUpperInvariant()), null, null, TestContext.Current.CancellationToken)).ShouldBeTrue();
+        (await repository.ExistsWithNameAsync(AName(name.Replace("Kaarsen", "Käarsen", StringComparison.Ordinal)), null, null, TestContext.Current.CancellationToken)).ShouldBeTrue();
     }
 
     [Fact]
@@ -119,7 +119,7 @@ public sealed class CategoryRepositoryTests(CatalogDatabaseFixture fixture) : IC
         await using CatalogDbContext context = fixture.CreateContext();
         CategoryRepository repository = new(context);
 
-        (await repository.ExistsWithNameAsync(created.Name, created.Id, TestContext.Current.CancellationToken)).ShouldBeFalse();
+        (await repository.ExistsWithNameAsync(created.Name, null, created.Id, TestContext.Current.CancellationToken)).ShouldBeFalse();
     }
 
     [Fact]
@@ -137,6 +137,6 @@ public sealed class CategoryRepositoryTests(CatalogDatabaseFixture fixture) : IC
 
         await using CatalogDbContext verification = fixture.CreateContext();
 
-        (await new CategoryRepository(verification).ExistsWithNameAsync(created.Name, null, TestContext.Current.CancellationToken)).ShouldBeFalse();
+        (await new CategoryRepository(verification).ExistsWithNameAsync(created.Name, null, null, TestContext.Current.CancellationToken)).ShouldBeFalse();
     }
 }

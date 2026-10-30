@@ -1,8 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { unstable_rethrow } from "next/navigation";
 import { ApiError, api } from "@/lib/api";
-import type { CatalogItem, Category, TripItem, TripSummary } from "@/lib/types";
+import type { CatalogItem, Category, Family, TripItem, TripSummary } from "@/lib/types";
 
 export type ActionResult<T> =
   | { ok: true; value: T }
@@ -13,6 +14,9 @@ async function run<T>(operation: () => Promise<T>): Promise<ActionResult<T>> {
   try {
     return { ok: true, value: await operation() };
   } catch (error) {
+    // Redirects to sign-in or the no-access page are thrown by Next.js; they must not become an error message.
+    unstable_rethrow(error);
+
     if (error instanceof ApiError) {
       return { ok: false, error: error.message };
     }
@@ -21,8 +25,16 @@ async function run<T>(operation: () => Promise<T>): Promise<ActionResult<T>> {
   }
 }
 
-export async function createCategoryAction(name: string): Promise<ActionResult<Category>> {
-  const result = await run(() => api.createCategory(name));
+export async function createCategoryAction(name: string, general = false): Promise<ActionResult<Category>> {
+  const result = await run(() => api.createCategory(name, general));
+  revalidatePath(general ? "/beheer/catalogus" : "/catalogus");
+
+  return result;
+}
+
+/** Switches a general category on or off for the signed-in family; trips already generated keep their items. */
+export async function switchCategoryAction(id: string, on: boolean): Promise<ActionResult<Category>> {
+  const result = await run(() => api.switchCategory(id, on));
   revalidatePath("/catalogus");
 
   return result;
@@ -153,6 +165,34 @@ export async function deleteTripItemAction(tripId: string, itemId: string): Prom
 export async function restoreTripItemAction(tripId: string, itemId: string): Promise<ActionResult<TripItem>> {
   const result = await run(() => api.restoreTripItem(tripId, itemId));
   revalidatePath(`/trips/${tripId}`);
+
+  return result;
+}
+
+export async function createFamilyAction(name: string): Promise<ActionResult<Family>> {
+  const result = await run(() => api.createFamily(name));
+  revalidatePath("/beheer");
+
+  return result;
+}
+
+export async function renameFamilyAction(id: string, name: string): Promise<ActionResult<Family>> {
+  const result = await run(() => api.renameFamily(id, name));
+  revalidatePath("/beheer");
+
+  return result;
+}
+
+export async function addMemberAction(familyId: string, email: string): Promise<ActionResult<Family>> {
+  const result = await run(() => api.addMember(familyId, email));
+  revalidatePath("/beheer");
+
+  return result;
+}
+
+export async function removeMemberAction(familyId: string, email: string): Promise<ActionResult<Family>> {
+  const result = await run(() => api.removeMember(familyId, email));
+  revalidatePath("/beheer");
 
   return result;
 }

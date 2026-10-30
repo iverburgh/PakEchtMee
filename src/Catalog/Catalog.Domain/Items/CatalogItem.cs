@@ -57,13 +57,25 @@ public sealed class CatalogItem
         Amount = amount;
     }
 
-    public void MoveTo(Category category)
+    /// <summary>
+    /// Moves the item from <paramref name="current"/> to <paramref name="target"/>. Both must share a scope, so a general
+    /// item never ends up in one family's catalog and a family's item never becomes visible to every family.
+    /// </summary>
+    public void MoveTo(Category current, Category target)
     {
-        ArgumentNullException.ThrowIfNull(category);
-        EnsureNotDeleted();
-        category.EnsureNotDeleted();
+        ArgumentNullException.ThrowIfNull(current);
+        ArgumentNullException.ThrowIfNull(target);
 
-        CategoryId = category.Id;
+        if (current.Id != CategoryId)
+            throw new ArgumentException($"Item '{Name}' does not belong to category '{current.Name}'.", nameof(current));
+
+        EnsureNotDeleted();
+        target.EnsureNotDeleted();
+
+        if (current.FamilyId != target.FamilyId)
+            throw new DomainValidationException("Een item kan niet tussen algemene en eigen categorieën worden verplaatst.");
+
+        CategoryId = target.Id;
     }
 
     public void Delete(DateTimeOffset deletedAt)
