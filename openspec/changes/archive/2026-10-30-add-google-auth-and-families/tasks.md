@@ -2,9 +2,9 @@
 
 ## 1. Setup
 
-- [ ] 1.1 Write `docs/google-sign-in.md` with the manual steps: create a Google Cloud project and OAuth client (type Web application), authorised redirect URI `http://localhost:3000/api/auth/callback/google`, add family members as test users while the consent screen is in testing mode, and fill the Aspire parameters `google-client-id` and `google-client-secret`. Verify by following the document once and confirming the client id and secret are stored in the AppHost user secrets.
+- [x] 1.1 Write `docs/google-sign-in.md` with the manual steps: create a Google Cloud project and OAuth client (type Web application), authorised redirect URI `http://localhost:3000/api/auth/callback/google`, add family members as test users while the consent screen is in testing mode, and fill the Aspire parameters `google-client-id` and `google-client-secret`. Verify by following the document once and confirming the client id and secret are stored in the AppHost user secrets.
 - [x] 1.2 Add `Microsoft.AspNetCore.Authentication.JwtBearer` to `Directory.Packages.props` and `Web.csproj`, and `next-auth@4` and `jose` to the web-client. Verify `dotnet build` and `npm run build` succeed.
-- [ ] 1.3 Wire the AppHost (design D10): fixed frontend port 3000, `NEXTAUTH_URL`, parameters `google-client-id`, `google-client-secret`, generated and persisted `nextauth-secret` and `api-token-key`, and pass them to the frontend and API. Verify with `aspire run` that the dashboard shows the frontend on `http://localhost:3000` and both resources receive the environment variables.
+- [x] 1.3 Wire the AppHost (design D10): fixed frontend port 3000, `NEXTAUTH_URL`, parameters `google-client-id`, `google-client-secret`, generated and persisted `nextauth-secret` and `api-token-key`, and pass them to the frontend and API. Verify with `aspire run` that the dashboard shows the frontend on `http://localhost:3000` and both resources receive the environment variables.
 
 ## 2. Families context
 
@@ -38,20 +38,20 @@
 
 ## 7. Frontend authentication
 
-- [ ] 7.1 Add `src/auth.ts` and the route handler `app/api/auth/[...nextauth]/route.ts` with the Google provider, JWT sessions, and a `signIn` callback that refuses unverified e-mail and asks `GET /api/me`. Verify manually: signing in as the administrator succeeds; an unknown Google account lands on `/geen-toegang` showing its e-mail.
-- [ ] 7.2 Add `src/proxy.ts` (optimistic redirect to `/inloggen?next=…`) and the DAL `lib/session.ts`; make `lib/api.ts` mint the API token per call and redirect on 401/403. Verify manually: opening `/catalogus` signed out goes to `/inloggen` and back to `/catalogus` after sign-in; removing yourself as a test member in `/beheer` from another session sends the next page load to `/geen-toegang`.
-- [ ] 7.3 Build `/inloggen`, `/geen-toegang`, the account menu with "Uitloggen", and the "no family" explanation for an administrator without a family. Verify manually on a phone-sized viewport and with `npm run lint` and `npm run build` passing.
+- [x] 7.1 Add `src/auth.ts` and the route handler `app/api/auth/[...nextauth]/route.ts` with the Google provider, JWT sessions, and a `signIn` callback that refuses unverified e-mail and asks `GET /api/me`. Verify manually: signing in as the administrator succeeds; an unknown Google account lands on `/geen-toegang` showing its e-mail.
+- [x] 7.2 Add `src/proxy.ts` (optimistic redirect to `/inloggen?next=…`) and the DAL `lib/session.ts`; make `lib/api.ts` mint the API token per call and redirect on 401/403. Verify manually: opening `/catalogus` signed out goes to `/inloggen` and back to `/catalogus` after sign-in; removing yourself as a test member in `/beheer` from another session sends the next page load to `/geen-toegang`.
+- [x] 7.3 Build `/inloggen`, `/geen-toegang`, the account menu with "Uitloggen", and the "no family" explanation for an administrator without a family. Verify manually on a phone-sized viewport and with `npm run lint` and `npm run build` passing.
 
 ## 8. Frontend catalog and administration
 
-- [ ] 8.1 Show general categories on `/catalogus` in their own section with an "Algemeen" badge, read-only, with an on/off switch, and keep own categories editable. Verify manually: switching "Kampeerkeuken" off removes it from the trip category picker; switching it on brings it back.
-- [ ] 8.2 Build `/beheer` (families with members, create and rename a family, add and remove members) and `/beheer/catalogus` (general catalog editing reusing the catalog components), and add the "Beheer" tab for administrators only. Verify manually as administrator and as a non-administrator member (no tab, `/beheer` shows no access).
+- [x] 8.1 Show general categories on `/catalogus` in their own section with an "Algemeen" badge, read-only, with an on/off switch, and keep own categories editable. Verify manually: switching "Kampeerkeuken" off removes it from the trip category picker; switching it on brings it back.
+- [x] 8.2 Build `/beheer` (families with members, create and rename a family, add and remove members) and `/beheer/catalogus` (general catalog editing reusing the catalog components), and add the "Beheer" tab for administrators only. Verify manually as administrator and as a non-administrator member (no tab, `/beheer` shows no access).
 
 ## 9. End-to-end check
 
 - [x] 9.1 Run `dotnet build`, `dotnet test`, `npm run lint` and `npm run build`, and verify all succeed without warnings.
-- [ ] 9.2 With `aspire run`, verify the migration on the existing local database: the 22 seeded categories are general, the other existing categories and all existing trips belong to "Verburgh", and `ivoverburgh@gmail.com` sees them after signing in.
-- [ ] 9.3 Verify family isolation end to end with a second Google test account: create family "Test" in `/beheer`, add the account, sign in with it in a private window, and confirm it sees the general catalog but none of Verburgh's own categories or trips; then remove it and confirm the next page load shows `/geen-toegang`.
+- [x] 9.2 With `aspire run`, verify the migration on the existing local database: the 22 seeded categories are general, the other existing categories and all existing trips belong to "Verburgh", and `ivoverburgh@gmail.com` sees them after signing in.
+- [x] 9.3 Verify family isolation end to end with a second Google test account: create family "Test" in `/beheer`, add the account, sign in with it in a private window, and confirm it sees the general catalog but none of Verburgh's own categories or trips; then remove it and confirm the next page load shows `/geen-toegang`.
 
 ## Workflow follow-up
 
