@@ -56,7 +56,7 @@
   - the API has no public FQDN;
   - signing in as the administrator shows family Verburgh and the general catalog of 22 categories, and no seed trips;
   - after the apps have scaled to zero, the first visit loads without an error.
-- [ ] 5.2 Push a trivial change to `main` and verify it is live without manual steps. Push two commits in quick succession and verify the deployments ran one after the other and production serves the second.
+- [x] 5.2 Push a trivial change to `main` and verify it is live without manual steps. Push two commits in quick succession and verify the deployments ran one after the other and production serves the second.
 
 ## Workflow follow-up
 

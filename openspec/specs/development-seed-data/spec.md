@@ -6,19 +6,19 @@ Guarantees that a local development database contains the family's real packing 
 
 ## Requirements
 
-### Requirement: Seeding runs only in the development environment
+### Requirement: Catalog is seeded in every environment, trips only in development
 
-The system SHALL apply the seed data at API startup in the Development environment, after the database migrations have been applied. In any other environment the system SHALL NOT insert seed data.
+The system SHALL apply the seed data at API startup, after the database migrations have been applied. The general catalog from the family packing list SHALL be seeded in every environment. The two seeded trips SHALL be seeded only in the Development environment.
 
 #### Scenario: Seed applied on development startup
 
 - **WHEN** the API starts in the Development environment against an empty database
 - **THEN** after startup the catalog contains the seeded categories and items and the trip list contains the two seeded trips
 
-#### Scenario: No seeding outside development
+#### Scenario: Only the catalog outside development
 
-- **WHEN** the API starts in an environment other than Development
-- **THEN** no seed categories, items or trips are inserted
+- **WHEN** the API starts in an environment other than Development against an empty database
+- **THEN** the general catalog contains the seeded categories and items, and no seed trips are inserted
 
 ### Requirement: Seeded catalog mirrors the family packing list
 
