@@ -38,7 +38,7 @@
 
 ## 4. GitHub Actions pipeline
 
-- [ ] 4.1 Add `.github/workflows/deploy.yml` (design D5):
+- [x] 4.1 Add `.github/workflows/deploy.yml` (design D5):
   - triggers on push to `main` and on `workflow_dispatch`;
   - concurrency group `deploy-production` without cancel-in-progress;
   - job `verify`: .NET build with warnings as errors, `dotnet test`, and `npm ci`, lint and build;
