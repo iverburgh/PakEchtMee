@@ -37,8 +37,9 @@ param nextAuthSecret string
 @description('Shared HS256 key for the short-lived tokens the frontend sends to the API (at least 32 characters).')
 param apiTokenKey string
 
-// The SQL server name is global DNS, so it carries a suffix that is stable per resource group.
-var suffix = uniqueString(resourceGroup().id)
+// The SQL server name is global DNS, so it carries a suffix that is stable per resource group and region; a region
+// move then never collides with a name Azure still reserves in the old region.
+var suffix = uniqueString(resourceGroup().id, location)
 var databaseName = 'pakechtmee'
 
 resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
