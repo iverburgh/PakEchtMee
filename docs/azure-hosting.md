@@ -38,12 +38,15 @@ az ad sp create --id $appId
 az role assignment create --assignee $appId --role Contributor `
   --scope "/subscriptions/$subscriptionId/resourceGroups/rg-pakechtmee"
 
-# Vertrouw alleen de GitHub-environment "production" van deze repository.
+# Vertrouw alleen de GitHub-environment "production" van deze repository. GitHub zet de numerieke id's van
+# eigenaar en repository in het subject (iverburgh@56253492/PakEchtMee@1375801848); ze staan in
+# https://api.github.com/repos/iverburgh/PakEchtMee onder owner.id en id. Een afwijkend subject staat letterlijk
+# in de AADSTS700213-fout van azure/login.
 @'
 {
-  "name": "github-production",
+  "name": "github-production-ids",
   "issuer": "https://token.actions.githubusercontent.com",
-  "subject": "repo:iverburgh/PakEchtMee:environment:production",
+  "subject": "repo:iverburgh@56253492/PakEchtMee@1375801848:environment:production",
   "audiences": ["api://AzureADTokenExchange"]
 }
 '@ | Set-Content federated.json

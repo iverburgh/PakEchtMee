@@ -203,7 +203,7 @@ The secrets come only from runtime environment variables, so no secret reaches t
 ### One-time setup (`docs/azure-hosting.md`)
 
 1. Create resource group `rg-pakechtmee` (the group itself sits in `westeurope`; its resources go to `northeurope`, see D3).
-2. Create an Entra app registration with a federated credential for `repo:iverburgh/PakEchtMee:environment:production`, and give it Contributor on the resource group.
+2. Create an Entra app registration with a federated credential for `repo:iverburgh@56253492/PakEchtMee@1375801848:environment:production` (GitHub presents owner and repository ids in the subject), and give it Contributor on the resource group.
 3. Create the GitHub environment `production`:
    - variables `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`;
    - secrets `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_SECRET` (new random value), `API_TOKEN_KEY` (new random value) and `GHCR_PULL_TOKEN`.
