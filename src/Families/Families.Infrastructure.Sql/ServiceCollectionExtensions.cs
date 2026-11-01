@@ -13,7 +13,10 @@ public static class ServiceCollectionExtensions
 
         services.AddDbContext<FamiliesDbContext>(options => options.UseSqlServer(
             connectionString,
-            sql => sql.MigrationsHistoryTable("__EFMigrationsHistory", FamiliesDbContext.Schema)));
+            // A free-tier Azure SQL database resumes from auto-pause with transient errors for up to a minute; retries ride that out.
+            sql => sql
+                .MigrationsHistoryTable("__EFMigrationsHistory", FamiliesDbContext.Schema)
+                .EnableRetryOnFailure(maxRetryCount: 6, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null)));
 
         services.AddScoped<IFamilyRepository, FamilyRepository>();
 

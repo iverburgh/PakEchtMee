@@ -10,6 +10,7 @@ using Web.Endpoints;
 using Web.Seeding;
 
 const string FrontendCorsPolicy = "frontend";
+const string PrepareDatabaseSetting = "Database:PrepareAtStartup";
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,14 +41,22 @@ builder.Services.AddCors(options => options.AddPolicy(
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
-{
     app.MapOpenApi().AllowAnonymous();
 
+// Runs before the app serves anything, so the readiness probe only passes on a migrated database. Production runs a
+// single replica, so no second instance migrates concurrently. Tests that build their own data switch it off.
+if (app.Configuration.GetValue(PrepareDatabaseSetting, defaultValue: true))
+{
     await using AsyncServiceScope scope = app.Services.CreateAsyncScope();
     await scope.ServiceProvider.GetRequiredService<FamiliesDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<CatalogDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<TripsDbContext>().Database.MigrateAsync();
-    await ActivatorUtilities.CreateInstance<DevelopmentSeeder>(scope.ServiceProvider).SeedAsync(CancellationToken.None);
+
+    // Every environment gets the general catalog; only Development adds the example trips on top of it.
+    if (app.Environment.IsDevelopment())
+        await ActivatorUtilities.CreateInstance<DevelopmentSeeder>(scope.ServiceProvider).SeedAsync(CancellationToken.None);
+    else
+        await ActivatorUtilities.CreateInstance<CatalogStartupSeeder>(scope.ServiceProvider).SeedAsync(CancellationToken.None);
 }
 
 app.UseExceptionHandler();

@@ -107,20 +107,17 @@ public static class Extensions
 
     public static WebApplication MapDefaultEndpoints(this WebApplication app)
     {
-        // Adding health checks endpoints to applications in non-development environments has security implications.
-        // See https://aka.ms/aspire/healthchecks for details before enabling these endpoints in non-development environments.
-        if (app.Environment.IsDevelopment())
-        {
-            // All health checks must pass for app to be considered ready to accept traffic after starting
-            // Health checks stay reachable without a token: the orchestrator probes them, and they expose no data.
-            app.MapHealthChecks(HealthEndpointPath).AllowAnonymous();
+        // Mapped in every environment: Azure Container Apps probes them in production. They only report a status
+        // (no check details), and the API has internal ingress only, so nothing outside the environment reaches them.
+        // All health checks must pass for app to be considered ready to accept traffic after starting
+        // Health checks stay reachable without a token: the orchestrator probes them, and they expose no data.
+        app.MapHealthChecks(HealthEndpointPath).AllowAnonymous();
 
-            // Only health checks tagged with the "live" tag must pass for app to be considered alive
-            app.MapHealthChecks(AlivenessEndpointPath, new HealthCheckOptions
-            {
-                Predicate = r => r.Tags.Contains("live")
-            }).AllowAnonymous();
-        }
+        // Only health checks tagged with the "live" tag must pass for app to be considered alive
+        app.MapHealthChecks(AlivenessEndpointPath, new HealthCheckOptions
+        {
+            Predicate = r => r.Tags.Contains("live")
+        }).AllowAnonymous();
 
         return app;
     }

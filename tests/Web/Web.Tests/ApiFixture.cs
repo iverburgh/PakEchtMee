@@ -66,8 +66,9 @@ public sealed class ApiFixture(SqlServerTestContainerFixture server) : WebApplic
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        // "Testing" keeps the startup migration and the OpenAPI document out of the way.
+        // "Testing" keeps the OpenAPI document out of the way; the fixture migrates and fills the database itself.
         builder.UseEnvironment("Testing");
+        builder.UseSetting("Database:PrepareAtStartup", "false");
         builder.UseSetting("ConnectionStrings:pakechtmee", connectionString);
         builder.UseSetting("Cors:AllowedOrigins:0", "http://localhost:3000");
         builder.UseSetting("Access:Administrators:1", Administrator);

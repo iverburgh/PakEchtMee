@@ -1,0 +1,9 @@
+node_modules
+.next
+public/sw.js
+public/swe-worker-*.js
+.env*
+*.tsbuildinfo
+npm-debug.log*
+Dockerfile
+.dockerignore

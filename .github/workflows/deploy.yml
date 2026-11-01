@@ -1,0 +1,131 @@
+# Builds, tests and deploys PakEchtMee to Azure on every push to main.
+# Deploy only runs after verify passes; deployments queue instead of overlapping. Setup: docs/azure-hosting.md.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Build and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/web-client/package-lock.json
+
+      - name: Build .NET
+        run: dotnet build PakEchtMee.sln -warnaserror
+
+      # The integration tests start SQL Server through Testcontainers on the runner's Docker.
+      - name: Test .NET
+        run: dotnet test --solution PakEchtMee.sln --no-build
+
+      - name: Install frontend dependencies
+        working-directory: src/web-client
+        run: npm ci
+
+      - name: Lint frontend
+        working-directory: src/web-client
+        run: npm run lint
+
+      - name: Build frontend
+        working-directory: src/web-client
+        run: npm run build
+
+  deploy:
+    name: Deploy to Azure
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    permissions:
+      contents: read
+      id-token: write # OpenID Connect sign-in to Azure, no stored Azure secret
+      packages: write # push images to GitHub Container Registry
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Image names
+        id: images
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          echo "owner=${owner}" >> "$GITHUB_OUTPUT"
+          echo "api=ghcr.io/${owner}/pakechtmee-api:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "web=ghcr.io/${owner}/pakechtmee-web:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The .NET SDK builds and pushes the API image itself, using the Docker login above.
+      - name: Publish API image
+        run: >
+          dotnet publish src/Web -c Release -t:PublishContainer
+          -p:ContainerRegistry=ghcr.io
+          -p:ContainerRepository=${{ steps.images.outputs.owner }}/pakechtmee-api
+          -p:ContainerImageTag=${GITHUB_SHA}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: src/web-client
+          push: true
+          tags: ${{ steps.images.outputs.web }}
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      # Secrets go in as @secure() Bicep parameters: masked in this log and stored as Container Apps secrets.
+      - name: Deploy infrastructure and apps
+        id: deploy
+        env:
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          API_TOKEN_KEY: ${{ secrets.API_TOKEN_KEY }}
+        run: |
+          url=$(az deployment group create \
+            --name "pakechtmee-${GITHUB_SHA::12}" \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --template-file infra/main.bicep \
+            --parameters \
+              apiImage="${{ steps.images.outputs.api }}" \
+              webImage="${{ steps.images.outputs.web }}" \
+              ghcrUsername="${{ steps.images.outputs.owner }}" \
+              ghcrPullToken="$GHCR_PULL_TOKEN" \
+              googleClientId="$GOOGLE_CLIENT_ID" \
+              googleClientSecret="$GOOGLE_CLIENT_SECRET" \
+              nextAuthSecret="$NEXTAUTH_SECRET" \
+              apiTokenKey="$API_TOKEN_KEY" \
+            --query properties.outputs.frontendUrl.value \
+            --output tsv)
+          echo "url=${url}" >> "$GITHUB_OUTPUT"
+          echo "Deployed ${GITHUB_SHA::12} to ${url}" >> "$GITHUB_STEP_SUMMARY"

@@ -15,7 +15,10 @@ public static class ServiceCollectionExtensions
 
         services.AddDbContext<CatalogDbContext>(options => options.UseSqlServer(
             connectionString,
-            sql => sql.MigrationsHistoryTable("__EFMigrationsHistory", CatalogDbContext.Schema)));
+            // A free-tier Azure SQL database resumes from auto-pause with transient errors for up to a minute; retries ride that out.
+            sql => sql
+                .MigrationsHistoryTable("__EFMigrationsHistory", CatalogDbContext.Schema)
+                .EnableRetryOnFailure(maxRetryCount: 6, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null)));
 
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<ICatalogItemRepository, CatalogItemRepository>();

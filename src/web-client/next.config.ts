@@ -15,6 +15,8 @@ const withSerwist = withSerwistInit({
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Bundles only the runtime files into .next/standalone, so the production image (see Dockerfile) stays small.
+  output: "standalone",
 };
 
 export default withSerwist(nextConfig);

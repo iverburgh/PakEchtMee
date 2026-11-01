@@ -4,6 +4,16 @@
     <UserSecretsId>pakechtmee-web</UserSecretsId>
   </PropertyGroup>
 
+  <!--
+    `dotnet publish -t:PublishContainer` builds the production image with the SDK's container support, so the API needs
+    no Dockerfile. The default aspnet base image runs as the non-root `app` user and listens on port 8080. The pipeline
+    sets ContainerRegistry and ContainerImageTag; without a registry the image goes to the local Docker daemon.
+  -->
+  <PropertyGroup>
+    <ContainerRepository>pakechtmee-api</ContainerRepository>
+    <ContainerImageTag>local</ContainerImageTag>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
