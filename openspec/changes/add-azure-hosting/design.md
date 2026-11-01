@@ -113,7 +113,7 @@ Other constraints:
 
 - Format: `Server=tcp:<server>.database.windows.net,1433;Database=pakechtmee;Authentication=Active Directory Managed Identity;User Id=<identity clientId>;Encrypt=True`.
 - It is passed as `ConnectionStrings__pakechtmee`, the name the Web project already reads through Aspire.
-- `Microsoft.Data.SqlClient` supports this authentication mode natively, so no new package is needed.
+- `Microsoft.Data.SqlClient` 7 ships Entra ID authentication in the separate package `Microsoft.Data.SqlClient.Extensions.Azure`; the Web project references it. Without it the API crashes at the first connection ("Cannot find an authentication provider for ActiveDirectoryManagedIdentity"), which the first production deployment showed.
 
 **Why the identity is server admin.** It is the simplest least-moving-parts setup for a single-app database. Creating a contained database user would need a post-deployment T-SQL step with an Entra-capable principal.
 

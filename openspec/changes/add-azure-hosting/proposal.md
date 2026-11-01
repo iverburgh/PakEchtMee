@@ -55,7 +55,7 @@ PakEchtMee only runs locally through Aspire, so the family cannot use it on holi
   - `src/Web/Web.csproj`: SDK container publishing.
   - `src/web-client/next.config.ts`.
 - **Dependencies**
-  - There are no new NuGet or npm packages. The API image is built with the .NET SDK container support (no Dockerfile).
+  - One new NuGet package: `Microsoft.Data.SqlClient.Extensions.Azure` (Entra ID sign-in for SqlClient 7, used for the managed identity). No new npm packages. The API image is built with the .NET SDK container support (no Dockerfile).
   - The pipeline uses GitHub-hosted runners, `azure/login`, Docker and the Azure CLI.
 - **Local development** is unchanged: Aspire keeps running SQL Server in a container. The AppHost is not used for deployment.
 - **External systems**

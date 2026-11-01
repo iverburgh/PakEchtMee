@@ -17,6 +17,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <!-- SqlClient 7 ships Entra ID authentication separately; production signs in to Azure SQL with a managed identity. -->
+    <PackageReference Include="Microsoft.Data.SqlClient.Extensions.Azure" />
   </ItemGroup>
 
   <ItemGroup>
