@@ -25,7 +25,7 @@
   - outputs: the frontend URL and the redirect URI.
 
   Verify with `az bicep build` (no warnings) and `az deployment group what-if` against the target resource group.
-- [ ] 3.2 Write `docs/azure-hosting.md` in Dutch, covering the one-time setup from the design's Migration Plan:
+- [x] 3.2 Write `docs/azure-hosting.md` in Dutch, covering the one-time setup from the design's Migration Plan:
   - the resource group;
   - the app registration with its federated credential and the Contributor role;
   - the GitHub environment `production` with its variables and secrets;
@@ -51,7 +51,7 @@
 
 ## 5. End-to-end check
 
-- [ ] 5.1 After the first green deployment, add the redirect URI to Google and check production end to end:
+- [x] 5.1 After the first green deployment, add the redirect URI to Google and check production end to end:
   - the frontend URL loads over HTTPS, and plain `http://` redirects;
   - the API has no public FQDN;
   - signing in as the administrator shows family Verburgh and the general catalog of 22 categories, and no seed trips;
