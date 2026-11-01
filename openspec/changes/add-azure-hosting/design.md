@@ -73,7 +73,7 @@ Other constraints:
 
 **Environment.**
 
-- A Consumption-only Container Apps environment in `northeurope`. `westeurope` was the first choice, but it accepts no new customers on the target subscription.
+- A Consumption-only Container Apps environment in `swedencentral`. `westeurope` and `northeurope` were tried first, but on the target subscription they accept no new customers or no new SQL servers; the apps and the database stay in one region so queries never cross regions.
 - Its logs go to a Log Analytics workspace with a daily cap of 0.15 GB, about 4.5 GB per month, so it stays under the free 5 GB.
 
 **`web` (Next.js).**
@@ -202,7 +202,7 @@ The secrets come only from runtime environment variables, so no secret reaches t
 
 ### One-time setup (`docs/azure-hosting.md`)
 
-1. Create resource group `rg-pakechtmee` (the group itself sits in `westeurope`; its resources go to `northeurope`, see D3).
+1. Create resource group `rg-pakechtmee` (the group itself sits in `westeurope`; its resources go to `swedencentral`, see D3).
 2. Create an Entra app registration with a federated credential for `repo:iverburgh@56253492/PakEchtMee@1375801848:environment:production` (GitHub presents owner and repository ids in the subject), and give it Contributor on the resource group.
 3. Create the GitHub environment `production`:
    - variables `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`;

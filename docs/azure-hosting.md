@@ -19,11 +19,20 @@ Hieronder staat de **eenmalige** setup. Daarna is een push op `main` genoeg.
 ```powershell
 az login
 az account set --subscription "<subscription-id>"
-az group create --name rg-pakechtmee --location northeurope
+az group create --name rg-pakechtmee --location swedencentral
 
 # Eenmalig per subscription; de pipeline zelf heeft hier geen rechten voor.
 "Microsoft.App", "Microsoft.OperationalInsights", "Microsoft.Sql", "Microsoft.ManagedIdentity" |
   ForEach-Object { az provider register --namespace $_ }
+```
+
+De regio staat in `infra/main.bicep` (`location`). Niet elke subscription mag overal nieuwe SQL-servers aanmaken:
+West en North Europe weigerden bij ons. Controleer een regio vooraf; `Available` is goed, `Visible` met een reden
+betekent geblokkeerd:
+
+```powershell
+az rest --method get --query "{status:status,reason:reason}" `
+  --url "https://management.azure.com/subscriptions/<subscription-id>/providers/Microsoft.Sql/locations/swedencentral/capabilities?api-version=2023-08-01-preview"
 ```
 
 ## 2. Azure: identiteit voor GitHub (OpenID Connect, zonder secret)
@@ -98,7 +107,7 @@ Gebruik voor productie andere waarden dan lokaal. Zet ze nooit in de repository.
 ## 5. Eerste deployment
 
 Push naar `main`, of start de workflow **Deploy** handmatig onder **Actions**. De samenvatting van de run toont
-de URL, bijvoorbeeld `https://web.<iets>.northeurope.azurecontainerapps.io`.
+de URL, bijvoorbeeld `https://web.<iets>.swedencentral.azurecontainerapps.io`.
 
 GitHub maakt de packages `pakechtmee-api` en `pakechtmee-web` aan bij de eerste push. Mislukt het ophalen van
 de images bij de allereerste run, start de job dan nog één keer opnieuw (**Re-run failed jobs**).
@@ -107,8 +116,8 @@ de images bij de allereerste run, start de job dan nog één keer opnieuw (**Re-
 
 In [Google Cloud Console](https://console.cloud.google.com/apis/credentials), bij dezelfde OAuth-client:
 
-- **Authorised JavaScript origins**: `https://web.<iets>.northeurope.azurecontainerapps.io`
-- **Authorised redirect URIs**: `https://web.<iets>.northeurope.azurecontainerapps.io/api/auth/callback/google`
+- **Authorised JavaScript origins**: `https://web.<iets>.swedencentral.azurecontainerapps.io`
+- **Authorised redirect URIs**: `https://web.<iets>.swedencentral.azurecontainerapps.io/api/auth/callback/google`
 
 Staat het consent screen nog in *Testing*, voeg dan iedere gebruiker toe als test user.
 

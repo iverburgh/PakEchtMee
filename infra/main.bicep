@@ -5,8 +5,8 @@
 
 targetScope = 'resourceGroup'
 
-@description('Azure region for all resources. West Europe accepts no new customers on this subscription, so North Europe it is.')
-param location string = 'northeurope'
+@description('Azure region for all resources. West and North Europe accept no new SQL servers on this subscription; Sweden Central does.')
+param location string = 'swedencentral'
 
 @description('Full image reference of the API, e.g. ghcr.io/owner/pakechtmee-api:<sha>.')
 param apiImage string
