@@ -2,8 +2,9 @@
 
 import { useMemo, useOptimistic, useState, useTransition } from "react";
 import Link from "next/link";
-import { Check, Layers, RotateCcw, Search, Trash2, Undo2, X } from "lucide-react";
+import { Check, ChevronDown, Layers, RotateCcw, Search, Trash2, Undo2, X } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "cn";
 import type { PackingStatus, TripDetails, TripItem } from "@/lib/types";
 import { describeAmount, progressStatuses, statusLabels } from "@/lib/types";
 import { applyFilter, emptyFilter, isFilterActive, type ItemFilter } from "@/lib/filter";
@@ -21,6 +22,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { groupByCategory } from "@/components/trips/group-by-category";
 
 type StatusPatch = { itemId: string; status: PackingStatus };
 
@@ -34,6 +36,7 @@ const statusTone: Record<PackingStatus, string> = {
 
 export function TripWorkspace({ trip }: { trip: TripDetails }) {
   const [filter, setFilter] = useState<ItemFilter>(emptyFilter);
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const [, startTransition] = useTransition();
 
   // While a change is in flight the item shows its new status but offers no further step,
@@ -53,6 +56,21 @@ export function TripWorkspace({ trip }: { trip: TripDetails }) {
   );
 
   const visible = useMemo(() => applyFilter(items, filter), [items, filter]);
+  const groups = useMemo(() => groupByCategory(visible, items), [visible, items]);
+
+  // A search shows every matching category expanded without touching the member's own choice,
+  // so clearing the query brings back exactly what was collapsed before.
+  const searching = filter.query.trim() !== "";
+  const toggleCollapsed = (categoryId: string) =>
+    setCollapsed((current) => {
+      const next = new Set(current);
+
+      if (!next.delete(categoryId)) {
+        next.add(categoryId);
+      }
+
+      return next;
+    });
 
   const progress = useMemo(() => {
     const live = items.filter((item) => !item.isDeleted);
@@ -129,6 +147,76 @@ export function TripWorkspace({ trip }: { trip: TripDetails }) {
   const toggleCategory = (categoryIds: string[]) => setFilter((current) => ({ ...current, categoryIds }));
   const toggleStatus = (statuses: string[]) =>
     setFilter((current) => ({ ...current, statuses: statuses as PackingStatus[] }));
+
+  const renderItem = (item: TripItem) => {
+    const amount = describeAmount(item.quantity, item.unit);
+
+    return (
+      <li key={item.id}>
+        <Card className="flex min-h-16 flex-row items-center gap-2 p-2 pl-3">
+          <div className="flex min-w-0 flex-1 flex-col">
+            <span className="truncate font-medium">
+              {item.name}
+              {amount ? <span className="text-muted-foreground font-normal"> {amount}</span> : null}
+            </span>
+          </div>
+
+          <Badge variant="secondary" className={statusTone[item.status]}>
+            {statusLabels[item.status]}
+          </Badge>
+
+          {item.isDeleted ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-11 shrink-0"
+              aria-label={`${item.name} terugzetten`}
+              onClick={() => restore(item)}
+            >
+              <RotateCcw aria-hidden />
+            </Button>
+          ) : (
+            <>
+              {item.previousStatus ? (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-11 shrink-0"
+                  aria-label={`${item.name} terug naar ${statusLabels[item.previousStatus]}`}
+                  onClick={() => revert(item)}
+                >
+                  <Undo2 aria-hidden />
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-11 shrink-0"
+                  aria-label={`${item.name} verwijderen`}
+                  onClick={() => remove(item)}
+                >
+                  <Trash2 aria-hidden />
+                </Button>
+              )}
+
+              {item.nextStatus ? (
+                <Button
+                  size="icon"
+                  className="size-11 shrink-0"
+                  aria-label={`${item.name} naar ${statusLabels[item.nextStatus]}`}
+                  onClick={() => advance(item)}
+                >
+                  <Check aria-hidden />
+                </Button>
+              ) : (
+                <span className="size-11 shrink-0" aria-hidden />
+              )}
+            </>
+          )}
+        </Card>
+      </li>
+    );
+  };
 
   if (trip.items.length === 0) {
     return (
@@ -263,78 +351,41 @@ export function TripWorkspace({ trip }: { trip: TripDetails }) {
           </Button>
         </Card>
       ) : (
-        <ul className="flex flex-col gap-2 pb-4">
-          {visible.map((item) => {
-            const amount = describeAmount(item.quantity, item.unit);
+        <div className="flex flex-col gap-4 pb-4">
+          {groups.map((group) => {
+            const expanded = searching || !collapsed.has(group.categoryId);
+            const listId = `category-items-${group.categoryId}`;
 
             return (
-              <li key={item.id}>
-                <Card className="flex min-h-16 flex-row items-center gap-2 p-2 pl-3">
-                  <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate font-medium">
-                      {item.name}
-                      {amount ? <span className="text-muted-foreground font-normal"> {amount}</span> : null}
+              <section key={group.categoryId} aria-labelledby={`${listId}-heading`} className="flex flex-col gap-2">
+                {/* Sticky inside its own section, so the next category's heading pushes it out of view. */}
+                <h2 id={`${listId}-heading`} className="bg-background/95 sticky top-0 z-10 -mx-4 px-4 backdrop-blur">
+                  <button
+                    type="button"
+                    aria-expanded={expanded}
+                    aria-controls={listId}
+                    disabled={searching}
+                    onClick={() => toggleCollapsed(group.categoryId)}
+                    className="flex min-h-11 w-full items-center gap-2 py-2 text-left disabled:cursor-default"
+                  >
+                    <ChevronDown
+                      className={cn("text-muted-foreground size-4 shrink-0 transition-transform", !expanded && "-rotate-90")}
+                      aria-hidden
+                    />
+                    <span className="min-w-0 flex-1 truncate text-base font-semibold tracking-tight">{group.name}</span>
+                    <span className="text-muted-foreground text-xs font-normal tabular-nums">
+                      {group.loaded}/{group.total} ingeladen
                     </span>
-                    <span className="text-muted-foreground truncate text-xs">{item.categoryName}</span>
-                  </div>
+                  </button>
+                </h2>
 
-                  <Badge variant="secondary" className={statusTone[item.status]}>
-                    {statusLabels[item.status]}
-                  </Badge>
-
-                  {item.isDeleted ? (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-11 shrink-0"
-                      aria-label={`${item.name} terugzetten`}
-                      onClick={() => restore(item)}
-                    >
-                      <RotateCcw aria-hidden />
-                    </Button>
-                  ) : (
-                    <>
-                      {item.previousStatus ? (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-11 shrink-0"
-                          aria-label={`${item.name} terug naar ${statusLabels[item.previousStatus]}`}
-                          onClick={() => revert(item)}
-                        >
-                          <Undo2 aria-hidden />
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-11 shrink-0"
-                          aria-label={`${item.name} verwijderen`}
-                          onClick={() => remove(item)}
-                        >
-                          <Trash2 aria-hidden />
-                        </Button>
-                      )}
-
-                      {item.nextStatus ? (
-                        <Button
-                          size="icon"
-                          className="size-11 shrink-0"
-                          aria-label={`${item.name} naar ${statusLabels[item.nextStatus]}`}
-                          onClick={() => advance(item)}
-                        >
-                          <Check aria-hidden />
-                        </Button>
-                      ) : (
-                        <span className="size-11 shrink-0" aria-hidden />
-                      )}
-                    </>
-                  )}
-                </Card>
-              </li>
+                <ul id={listId} hidden={!expanded} className="flex flex-col gap-2">
+                  {group.items.map((item) => renderItem(item))}
+                </ul>
+              </section>
             );
           })}
-        </ul>
+        </div>
       )}
     </main>
   );
