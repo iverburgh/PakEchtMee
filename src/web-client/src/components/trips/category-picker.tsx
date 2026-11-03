@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { selectAllState } from "@/components/trips/select-all";
 
 export function CategoryPicker({ trip, categories }: { trip: TripDetails; categories: Category[] }) {
   const selected = new Set(trip.categories.map((category) => category.categoryId));
@@ -27,6 +28,11 @@ export function CategoryPicker({ trip, categories }: { trip: TripDetails; catego
   const [confirming, setConfirming] = useState<TripCategory | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
+  const selectAll = selectAllState(
+    categories.map((category) => category.id),
+    selected,
+    pendingAdditions,
+  );
 
   const toggle = (categoryId: string, checked: boolean) => {
     if (!selected.has(categoryId)) {
@@ -85,6 +91,22 @@ export function CategoryPicker({ trip, categories }: { trip: TripDetails; catego
           <p className="text-muted-foreground text-sm">
             Er zijn nog geen categorieën. Maak ze eerst aan in de catalogus.
           </p>
+        </Card>
+      ) : null}
+
+      {categories.length > 0 ? (
+        <Card className="bg-muted/40 flex min-h-16 flex-row items-center gap-3 p-3">
+          <Checkbox
+            id="category-all"
+            checked={selectAll.status === "all"}
+            indeterminate={selectAll.status === "some"}
+            disabled={!selectAll.canToggle || pending}
+            onCheckedChange={() => setPendingAdditions(selectAll.nextPending)}
+            className="size-6"
+          />
+          <Label htmlFor="category-all" className="min-h-11 flex-1 cursor-pointer items-center font-semibold">
+            Alles
+          </Label>
         </Card>
       ) : null}
 
