@@ -58,6 +58,33 @@ namespace Families.Infrastructure.Sql.Migrations
                     b.ToTable("Members", "families");
                 });
 
+            modelBuilder.Entity("Families.Domain.Family", b =>
+                {
+                    b.OwnsOne("Families.Domain.FamilyComposition", "Composition", b1 =>
+                        {
+                            b1.Property<Guid>("FamilyId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<int>("Adults")
+                                .HasColumnType("int")
+                                .HasColumnName("Adults");
+
+                            b1.Property<int>("Children")
+                                .HasColumnType("int")
+                                .HasColumnName("Children");
+
+                            b1.HasKey("FamilyId");
+
+                            b1.ToTable("Families", "families");
+
+                            b1.WithOwner()
+                                .HasForeignKey("FamilyId");
+                        });
+
+                    b.Navigation("Composition")
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Families.Domain.Member", b =>
                 {
                     b.HasOne("Families.Domain.Family", null)

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { CircleUserRound, ListChecks, LogOut, Luggage, ShieldCheck } from "lucide-react";
+import { CircleUserRound, ListChecks, LogOut, Luggage, ShieldCheck, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -80,6 +80,12 @@ export function BottomNav({
                 </DropdownMenuLabel>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
+              {familyName ? (
+                <DropdownMenuItem render={<Link href="/gezin" />}>
+                  <Users aria-hidden />
+                  Gezin
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuItem onClick={() => void signOut({ callbackUrl: "/inloggen" })}>
                 <LogOut aria-hidden />
                 Uitloggen

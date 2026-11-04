@@ -70,6 +70,7 @@ app.MapMeEndpoints();
 app.MapCategoryEndpoints().RequireKnownUser();
 app.MapCatalogItemEndpoints().RequireKnownUser();
 app.MapTripEndpoints().RequireMember();
+app.MapFamilyEndpoints().RequireMember();
 app.MapFamilyAdministrationEndpoints().RequireAdministrator();
 
 await app.RunAsync();

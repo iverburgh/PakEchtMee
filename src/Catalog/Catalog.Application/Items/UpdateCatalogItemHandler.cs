@@ -9,11 +9,12 @@ using Result = CSharpFunctionalExtensions.Result<Catalog.Application.Contracts.C
 
 namespace Catalog.Application.Items;
 
-/// <summary>Renames an item and replaces its optional amount in one step, which is how the item form edits it.</summary>
+/// <summary>Renames an item and replaces its optional quantity rule in one step, which is how the item form edits it.</summary>
 public sealed class UpdateCatalogItemHandler(ICategoryRepository categories, ICatalogItemRepository items)
     : IRequestHandler<UpdateCatalogItemHandler.Command, Result>
 {
-    public sealed record Command(CatalogActor Actor, Guid Id, string? Name, int? Quantity, string? Unit) : IRequest<Result>;
+    public sealed record Command(CatalogActor Actor, Guid Id, string? Name, int? Quantity, string? Unit, string? Basis = null)
+        : IRequest<Result>;
 
     public async Task<Result> Handle(Command request, CancellationToken cancellationToken)
     {
@@ -27,7 +28,7 @@ public sealed class UpdateCatalogItemHandler(ICategoryRepository categories, ICa
 
         CatalogItem item = loaded.Value.Item;
         ItemName name = ItemName.Create(request.Name);
-        Amount? amount = Amount.Create(request.Quantity, request.Unit);
+        Amount? amount = Amount.Create(request.Quantity, request.Unit, QuantityBases.Parse(request.Basis));
 
         if (await items.ExistsWithNameInCategoryAsync(item.CategoryId, name, request.Id, cancellationToken))
             return new DomainValidationException($"Er bestaat al een item met de naam '{name}' in deze categorie.");

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { ApiError, api } from "@/lib/api";
-import type { CatalogItem, Category, Family, TripItem, TripSummary } from "@/lib/types";
+import type { CatalogItem, Category, Composition, Family, QuantityBasis, TripItem, TripSummary } from "@/lib/types";
 
 export type ActionResult<T> =
   | { ok: true; value: T }
@@ -66,6 +66,7 @@ export async function createItemAction(input: {
   name: string;
   quantity: number | null;
   unit: string | null;
+  basis: QuantityBasis;
 }): Promise<ActionResult<CatalogItem>> {
   const result = await run(() => api.createItem(input));
   revalidatePath(`/catalogus/${input.categoryId}`);
@@ -76,7 +77,7 @@ export async function createItemAction(input: {
 export async function updateItemAction(
   categoryId: string,
   id: string,
-  input: { name: string; quantity: number | null; unit: string | null },
+  input: { name: string; quantity: number | null; unit: string | null; basis: QuantityBasis },
 ): Promise<ActionResult<CatalogItem>> {
   const result = await run(() => api.updateItem(id, input));
   revalidatePath(`/catalogus/${categoryId}`);
@@ -165,6 +166,37 @@ export async function deleteTripItemAction(tripId: string, itemId: string): Prom
 export async function restoreTripItemAction(tripId: string, itemId: string): Promise<ActionResult<TripItem>> {
   const result = await run(() => api.restoreTripItem(tripId, itemId));
   revalidatePath(`/trips/${tripId}`);
+
+  return result;
+}
+
+/** Changes who comes along on one trip; reports how many totals of items still to do were recalculated. */
+export async function changeTripCompositionAction(
+  tripId: string,
+  composition: Composition,
+): Promise<ActionResult<{ changedTotals: number }>> {
+  const result = await run(() => api.changeTripComposition(tripId, composition));
+  revalidatePath(`/trips/${tripId}`);
+  revalidatePath(`/trips/${tripId}/overzicht`);
+
+  return result.ok ? { ok: true, value: { changedTotals: result.value.changedTotals } } : result;
+}
+
+export async function changeTripItemQuantityAction(
+  tripId: string,
+  itemId: string,
+  input: { quantity: number | null; unit: string | null; basis: QuantityBasis },
+): Promise<ActionResult<TripItem>> {
+  const result = await run(() => api.changeTripItemQuantity(tripId, itemId, input));
+  revalidatePath(`/trips/${tripId}`);
+
+  return result;
+}
+
+/** Changes the family's size; new trips start from it, existing trips keep their own composition. */
+export async function changeFamilyCompositionAction(composition: Composition): Promise<ActionResult<Composition>> {
+  const result = await run(() => api.changeFamilyComposition(composition));
+  revalidatePath("/gezin");
 
   return result;
 }

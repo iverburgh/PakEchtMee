@@ -16,14 +16,14 @@ internal static class CatalogItemEndpoints
 
         group.MapPost("/", async (CreateItemRequest request, CurrentUser user, ISender sender, CancellationToken cancellationToken) =>
             (await sender.Send(
-                new CreateCatalogItemHandler.Command(user.CatalogActor, request.CategoryId, request.Name, request.Quantity, request.Unit),
+                new CreateCatalogItemHandler.Command(user.CatalogActor, request.CategoryId, request.Name, request.Quantity, request.Unit, request.Basis),
                 cancellationToken))
                 .ToHttpResult(item => Results.Created($"/api/items/{item.Id}", item)))
             .WithName("CreateCatalogItem");
 
         group.MapPut("/{id:guid}", async (Guid id, UpdateItemRequest request, CurrentUser user, ISender sender, CancellationToken cancellationToken) =>
             (await sender.Send(
-                new UpdateCatalogItemHandler.Command(user.CatalogActor, id, request.Name, request.Quantity, request.Unit),
+                new UpdateCatalogItemHandler.Command(user.CatalogActor, id, request.Name, request.Quantity, request.Unit, request.Basis),
                 cancellationToken)).ToHttpResult())
             .WithName("UpdateCatalogItem");
 
@@ -42,9 +42,9 @@ internal static class CatalogItemEndpoints
         return group;
     }
 
-    internal sealed record CreateItemRequest(Guid CategoryId, string? Name, int? Quantity, string? Unit);
+    internal sealed record CreateItemRequest(Guid CategoryId, string? Name, int? Quantity, string? Unit, string? Basis);
 
-    internal sealed record UpdateItemRequest(string? Name, int? Quantity, string? Unit);
+    internal sealed record UpdateItemRequest(string? Name, int? Quantity, string? Unit, string? Basis);
 
     internal sealed record MoveItemRequest(Guid TargetCategoryId);
 }

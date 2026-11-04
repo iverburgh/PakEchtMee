@@ -32,6 +32,70 @@ public sealed class CatalogItemHandlerTests
     }
 
     [Fact]
+    public async Task Creating_an_item_with_a_basis_stores_the_rule()
+    {
+        Category category = harness.GivenCategory();
+
+        Result<CatalogItemDto, Exception> result = await harness.Mediator.Send(
+            new CreateCatalogItemHandler.Command(CatalogHarness.Member, category.Id, "Jassen", 1, null, "PerChild"), TestContext.Current.CancellationToken);
+
+        result.Value.Quantity.ShouldBe(1);
+        result.Value.Basis.ShouldBe("PerChild");
+        harness.Items.Verify(
+            repository => repository.Add(It.Is<CatalogItem>(item => item.Amount!.Basis == QuantityBasis.PerChild)), Times.Once);
+    }
+
+    [Fact]
+    public async Task Creating_an_item_without_a_basis_makes_it_fixed()
+    {
+        Category category = harness.GivenCategory();
+
+        Result<CatalogItemDto, Exception> result = await harness.Mediator.Send(
+            new CreateCatalogItemHandler.Command(CatalogHarness.Member, category.Id, "Haringen", 20, null), TestContext.Current.CancellationToken);
+
+        result.Value.Basis.ShouldBe("Fixed");
+    }
+
+    [Fact]
+    public async Task Creating_an_item_with_an_unknown_basis_is_rejected()
+    {
+        Category category = harness.GivenCategory();
+
+        Result<CatalogItemDto, Exception> result = await harness.Mediator.Send(
+            new CreateCatalogItemHandler.Command(CatalogHarness.Member, category.Id, "Jassen", 1, null, "PerDog"), TestContext.Current.CancellationToken);
+
+        result.Error.ShouldBeOfType<DomainValidationException>();
+        harness.Items.Verify(repository => repository.Add(It.IsAny<CatalogItem>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Updating_an_item_changes_its_basis()
+    {
+        Category category = harness.GivenCategory();
+        CatalogItem item = harness.GivenItem(category, "Borden", 1);
+
+        Result<CatalogItemDto, Exception> result = await harness.Mediator.Send(
+            new UpdateCatalogItemHandler.Command(CatalogHarness.Member, item.Id, "Borden", 1, null, "PerPerson"), TestContext.Current.CancellationToken);
+
+        result.Value.Basis.ShouldBe("PerPerson");
+        item.Amount!.Basis.ShouldBe(QuantityBasis.PerPerson);
+    }
+
+    [Fact]
+    public async Task A_failing_repository_while_saving_a_basis_becomes_a_failure()
+    {
+        Category category = harness.GivenCategory();
+        harness.Items
+            .Setup(repository => repository.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("database down"));
+
+        Result<CatalogItemDto, Exception> result = await harness.Mediator.Send(
+            new CreateCatalogItemHandler.Command(CatalogHarness.Member, category.Id, "Jassen", 1, null, "PerChild"), TestContext.Current.CancellationToken);
+
+        result.Error.ShouldBeOfType<InvalidOperationException>();
+    }
+
+    [Fact]
     public async Task Creating_an_item_in_an_unknown_category_reports_not_found()
     {
         Result<CatalogItemDto, Exception> result = await harness.Mediator.Send(

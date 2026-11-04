@@ -25,6 +25,13 @@ internal sealed class FamilyConfiguration : IEntityTypeConfiguration<Family>
 
         builder.HasIndex(family => family.Name).IsUnique();
 
+        builder.OwnsOne(family => family.Composition, composition =>
+        {
+            composition.Property(value => value.Adults).HasColumnName("Adults");
+            composition.Property(value => value.Children).HasColumnName("Children");
+        });
+        builder.Navigation(family => family.Composition).IsRequired();
+
         builder.HasMany(family => family.Members)
             .WithOne()
             .HasForeignKey(member => member.FamilyId)

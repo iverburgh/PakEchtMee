@@ -25,6 +25,9 @@ internal sealed class CatalogItemConfiguration : IEntityTypeConfiguration<Catalo
         {
             amount.Property(value => value.Quantity).HasColumnName("Quantity");
             amount.Property(value => value.Unit).HasColumnName("Unit").HasMaxLength(Amount.MaxUnitLength);
+
+            // Stored by name, like a status would be read in the database; nullable because an item without an amount has none.
+            amount.Property(value => value.Basis).HasColumnName("QuantityBasis").HasConversion<string>().HasMaxLength(20);
         });
 
         builder.Property(item => item.DeletedAt);

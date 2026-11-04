@@ -49,7 +49,7 @@ internal static class CategorySelections
                     category.Name,
                     [.. items.Value
                         .Where(item => item.CategoryId == category.Id)
-                        .Select(item => new CatalogItemSnapshot(item.Id, item.Name, item.Quantity, item.Unit))]))
+                        .Select(item => new CatalogItemSnapshot(item.Id, item.Name, item.Quantity, item.Unit, QuantityBases.Parse(item.Basis)))]))
         ];
 
         return selections;

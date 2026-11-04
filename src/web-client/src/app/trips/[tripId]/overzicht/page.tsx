@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { api } from "@/lib/api";
 import { orNotFound } from "@/lib/or-not-found";
-import { describeAmount, statusLabels, type PackingStatus, type TripItem } from "@/lib/types";
+import { describeAmount, describeComposition, describeRule, statusLabels, type PackingStatus, type TripItem } from "@/lib/types";
 import { PrintButton } from "@/components/trips/print-button";
 
 function toArray(value: string | string[] | undefined): string[] {
@@ -77,6 +77,7 @@ export default async function TripOverviewPage({
         <section className="flex flex-col gap-1 border-b pb-3">
           <h2 className="text-2xl font-semibold tracking-tight">{trip.name}</h2>
           {range ? <p className="text-muted-foreground text-sm">{range}</p> : null}
+          <p className="text-muted-foreground text-sm">{describeComposition({ adults: trip.adults, children: trip.children })}</p>
           <p className="text-muted-foreground text-sm">
             {trip.progress.loaded} van {trip.progress.total} ingeladen
             {" · "}
@@ -103,7 +104,9 @@ export default async function TripOverviewPage({
               <h3 className="border-b pb-1 text-base font-semibold">{categoryName}</h3>
               <ul className="divide-y">
                 {categoryItems.map((item) => {
-                  const amount = describeAmount(item.quantity, item.unit);
+                  const total = describeAmount(item.total, item.unit);
+                  // Text rather than a coloured chip, so the rule survives a black-and-white print.
+                  const rule = item.basis === "Fixed" ? "" : describeRule(item.quantity, item.unit, item.basis);
 
                   return (
                     <li key={item.id} className="flex items-center gap-3 py-2">
@@ -112,8 +115,9 @@ export default async function TripOverviewPage({
                         className="border-foreground inline-block size-4 shrink-0 border print:border-black"
                       />
                       <span className="flex-1">
+                        {total ? <span className="font-semibold tabular-nums">{total} </span> : null}
                         {item.name}
-                        {amount ? <span className="text-muted-foreground"> {amount}</span> : null}
+                        {rule ? <span className="text-muted-foreground"> ({rule})</span> : null}
                       </span>
                       {/* Text rather than colour, so the printed sheet stays readable in black and white. */}
                       <span className="text-muted-foreground text-xs uppercase">{statusLabels[item.status]}</span>

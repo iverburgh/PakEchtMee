@@ -67,7 +67,8 @@ public sealed class CatalogSeederTests(SqlServerTestContainerFixture server)
         CatalogItem sleepingBag = await context.Items.SingleAsync(
             item => item.Id == CatalogSeedData.ItemId(CatalogSeedData.KinderenSlapen, "Slaapzak"),
             CancellationToken);
-        sleepingBag.Amount!.Quantity.ShouldBe(3);
+        sleepingBag.Amount!.Quantity.ShouldBe(1);
+        sleepingBag.Amount.Basis.ShouldBe(QuantityBasis.PerChild);
         sleepingBag.Amount.Unit.ShouldBeNull();
     }
 

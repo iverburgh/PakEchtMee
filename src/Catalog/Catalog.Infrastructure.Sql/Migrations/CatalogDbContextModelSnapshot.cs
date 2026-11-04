@@ -114,6 +114,12 @@ namespace Catalog.Infrastructure.Sql.Migrations
                             b1.Property<Guid>("CatalogItemId")
                                 .HasColumnType("uniqueidentifier");
 
+                            b1.Property<string>("Basis")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)")
+                                .HasColumnName("QuantityBasis");
+
                             b1.Property<int>("Quantity")
                                 .HasColumnType("int")
                                 .HasColumnName("Quantity");

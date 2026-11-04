@@ -51,15 +51,35 @@ public sealed class CatalogSeedDataTests
             .ShouldBe(["Snoetenpoetsers", "Extra beddengoed", "Dekens"]);
 
     [Theory]
-    [InlineData("Slaapzak")]
-    [InlineData("Matje")]
-    [InlineData("Kussen")]
-    public void Items_for_three_children_carry_quantity_three(string name)
-        => CategoryNamed(CatalogSeedData.KinderenSlapen).Items.Single(item => item.Name == name).Quantity.ShouldBe(3);
+    [InlineData(CatalogSeedData.KinderenSlapen, "Slaapzak", QuantityBasis.PerChild)]
+    [InlineData(CatalogSeedData.KinderenSlapen, "Matje", QuantityBasis.PerChild)]
+    [InlineData(CatalogSeedData.KinderenSlapen, "Kussen", QuantityBasis.PerChild)]
+    [InlineData(CatalogSeedData.KinderenToiletartikelen, "Handdoek(en) douchen", QuantityBasis.PerChild)]
+    [InlineData(CatalogSeedData.KinderenBuitenkleding, "Jassen", QuantityBasis.PerChild)]
+    [InlineData(CatalogSeedData.Buitenkleding, "Jas", QuantityBasis.PerAdult)]
+    [InlineData(CatalogSeedData.SlapenInTent, "Matjes", QuantityBasis.PerAdult)]
+    [InlineData(CatalogSeedData.Kampeerkeuken, "Borden", QuantityBasis.PerPerson)]
+    [InlineData(CatalogSeedData.KamperenAlgemeen, "Stoelen", QuantityBasis.PerPerson)]
+    public void Per_head_items_carry_one_per_head(string category, string name, QuantityBasis basis)
+    {
+        SeedItem item = CategoryNamed(category).Items.Single(item => item.Name == name);
+
+        item.Quantity.ShouldBe(1);
+        item.Basis.ShouldBe(basis);
+    }
 
     [Fact]
-    public void Only_the_childrens_sleeping_gear_carries_a_quantity()
-        => CatalogSeedData.Categories.SelectMany(category => category.Items).Count(item => item.Quantity is not null).ShouldBe(3);
+    public void Every_per_head_entry_names_an_existing_seed_item()
+        => CatalogSeedData.PerHead.Keys.ShouldAllBe(key => CategoryNamed(key.Category).Items.Any(item => item.Name == key.Item));
+
+    [Fact]
+    public void Only_the_per_head_items_carry_a_quantity()
+    {
+        List<SeedItem> withQuantity = [.. CatalogSeedData.Categories.SelectMany(category => category.Items).Where(item => item.Quantity is not null)];
+
+        withQuantity.Count.ShouldBe(CatalogSeedData.PerHead.Count);
+        CategoryNamed(CatalogSeedData.Kampeerkeuken).Items.Single(item => item.Name == "Pannen").Quantity.ShouldBeNull();
+    }
 
     [Fact]
     public void Ids_derive_from_the_seed_names()

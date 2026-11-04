@@ -25,12 +25,13 @@ public sealed class TripsSeederTests(SqlServerTestContainerFixture server)
         TripId,
         Family,
         "Wintersport Frankrijk 2025",
+        TripComposition.Create(2, 3),
         [new CategorySelection(
             CategoryId,
             "Kinderen – Vermaak op locatie",
             [
                 new CatalogItemSnapshot(SwimmingId, "Zwembandjes", null, null),
-                new CatalogItemSnapshot(JacketId, "Jassen", null, null),
+                new CatalogItemSnapshot(JacketId, "Jassen", 1, null, QuantityBasis.PerChild),
                 new CatalogItemSnapshot(GlovesId, "Wanten", 3, "paar"),
             ])],
         [SwimmingId]);
@@ -80,6 +81,18 @@ public sealed class TripsSeederTests(SqlServerTestContainerFixture server)
         trip.Items.Single(item => item.SourceItemId == SwimmingId).IsDeleted.ShouldBeTrue();
         trip.Items.Where(item => item.SourceItemId != SwimmingId).ShouldAllBe(item => !item.IsDeleted && item.Status == PackingStatus.Active);
         trip.Items.Single(item => item.SourceItemId == GlovesId).Amount!.ToString().ShouldBe("3 paar");
+    }
+
+    [Fact]
+    public async Task A_new_trip_gets_the_seeded_composition_and_totals()
+    {
+        Func<TripsDbContext> createContext = await NewDatabaseAsync();
+
+        await SeedAsync(createContext);
+
+        Trip trip = await LoadAsync(createContext);
+        trip.Composition.ShouldBe(TripComposition.Create(2, 3));
+        trip.Items.Single(item => item.SourceItemId == JacketId).Total.ShouldBe(3);
     }
 
     [Fact]

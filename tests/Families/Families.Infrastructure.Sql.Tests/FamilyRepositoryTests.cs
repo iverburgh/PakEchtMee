@@ -1,4 +1,4 @@
-using Families.Domain;
+﻿using Families.Domain;
 using Families.Infrastructure.Sql.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Shared.Tests;
@@ -41,6 +41,49 @@ public sealed class FamilyRepositoryTests(FamiliesDatabaseFixture fixture) : ICl
         verburgh.ShouldNotBeNull();
         verburgh.Name.Value.ShouldBe("Verburgh");
         verburgh.Members.Select(member => member.Email.Value).ShouldBe(["ivoverburgh@gmail.com"]);
+    }
+
+    [Fact]
+    public async Task The_migration_gives_verburgh_two_adults_and_three_children()
+    {
+        await using FamiliesDbContext context = fixture.CreateContext();
+
+        Family? verburgh = await new FamilyRepository(context).FindAsync(KnownFamilies.Verburgh, CancellationToken);
+
+        verburgh.ShouldNotBeNull();
+        verburgh.Composition.ShouldBe(FamilyComposition.Create(2, 3));
+    }
+
+    [Fact]
+    public async Task A_new_family_is_stored_with_the_default_composition()
+    {
+        Family created = await GivenFamilyAsync(Unique("Jansen"));
+
+        await using FamiliesDbContext context = fixture.CreateContext();
+        Family? found = await new FamilyRepository(context).FindAsync(created.Id, CancellationToken);
+
+        found.ShouldNotBeNull();
+        found.Composition.ShouldBe(FamilyComposition.Default);
+    }
+
+    [Fact]
+    public async Task A_changed_composition_round_trips_including_zero_adults()
+    {
+        Family created = await GivenFamilyAsync(Unique("Jansen"));
+
+        await using (FamiliesDbContext context = fixture.CreateContext())
+        {
+            FamilyRepository repository = new(context);
+            Family family = (await repository.FindAsync(created.Id, CancellationToken))!;
+            family.ChangeComposition(FamilyComposition.Create(0, 2));
+            await repository.SaveChangesAsync(CancellationToken);
+        }
+
+        await using FamiliesDbContext verify = fixture.CreateContext();
+        Family? found = await new FamilyRepository(verify).FindAsync(created.Id, CancellationToken);
+
+        found.ShouldNotBeNull();
+        found.Composition.ShouldBe(FamilyComposition.Create(0, 2));
     }
 
     [Fact]

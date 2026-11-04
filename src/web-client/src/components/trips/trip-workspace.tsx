@@ -2,11 +2,11 @@
 
 import { useMemo, useOptimistic, useState, useTransition } from "react";
 import Link from "next/link";
-import { Check, ChevronDown, Layers, RotateCcw, Search, Trash2, Undo2, X } from "lucide-react";
+import { Check, ChevronDown, Layers, Pencil, RotateCcw, Search, Trash2, Undo2, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
 import type { PackingStatus, TripDetails, TripItem } from "@/lib/types";
-import { describeAmount, progressStatuses, statusLabels } from "@/lib/types";
+import { progressStatuses, statusLabels } from "@/lib/types";
 import { applyFilter, emptyFilter, isFilterActive, type ItemFilter } from "@/lib/filter";
 import {
   advanceTripItemAction,
@@ -23,6 +23,8 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { groupByCategory } from "@/components/trips/group-by-category";
+import { QuantityDialog } from "@/components/trips/quantity-dialog";
+import { QuantityBadge } from "@/components/quantity-badge";
 
 type StatusPatch = { itemId: string; status: PackingStatus };
 
@@ -37,6 +39,7 @@ const statusTone: Record<PackingStatus, string> = {
 export function TripWorkspace({ trip }: { trip: TripDetails }) {
   const [filter, setFilter] = useState<ItemFilter>(emptyFilter);
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
+  const [quantityItem, setQuantityItem] = useState<TripItem | null>(null);
   const [, startTransition] = useTransition();
 
   // While a change is in flight the item shows its new status but offers no further step,
@@ -149,17 +152,35 @@ export function TripWorkspace({ trip }: { trip: TripDetails }) {
     setFilter((current) => ({ ...current, statuses: statuses as PackingStatus[] }));
 
   const renderItem = (item: TripItem) => {
-    const amount = describeAmount(item.quantity, item.unit);
+    const details = (
+      <>
+        <span className="truncate font-medium">{item.name}</span>
+        <QuantityBadge quantity={item.quantity} unit={item.unit} basis={item.basis} total={item.total} />
+      </>
+    );
 
     return (
       <li key={item.id}>
         <Card className="flex min-h-16 flex-row items-center gap-2 p-2 pl-3">
-          <div className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate font-medium">
-              {item.name}
-              {amount ? <span className="text-muted-foreground font-normal"> {amount}</span> : null}
-            </span>
-          </div>
+          {/* Only an item still to do can get another quantity, so only then is the name a button. */}
+          {item.status === "Active" && !item.isDeleted ? (
+            <button
+              type="button"
+              onClick={() => setQuantityItem(item)}
+              aria-label={`Aantal van ${item.name} wijzigen`}
+              className="group/quantity hover:bg-muted/60 -my-1 -ml-1 flex min-h-11 min-w-0 flex-1 flex-col items-start justify-center gap-1 rounded-md py-1 pl-1 text-left transition-colors"
+            >
+              <span className="flex max-w-full items-center gap-1.5">
+                {details}
+                <Pencil
+                  className="text-muted-foreground size-3.5 shrink-0 opacity-0 transition-opacity group-hover/quantity:opacity-100 group-focus-visible/quantity:opacity-100"
+                  aria-hidden
+                />
+              </span>
+            </button>
+          ) : (
+            <div className="flex min-w-0 flex-1 flex-col items-start gap-1">{details}</div>
+          )}
 
           <Badge variant="secondary" className={statusTone[item.status]}>
             {statusLabels[item.status]}
@@ -387,6 +408,17 @@ export function TripWorkspace({ trip }: { trip: TripDetails }) {
           })}
         </div>
       )}
+
+      <QuantityDialog
+        tripId={trip.id}
+        item={quantityItem}
+        composition={{ adults: trip.adults, children: trip.children }}
+        onOpenChange={(open) => {
+          if (!open) {
+            setQuantityItem(null);
+          }
+        }}
+      />
     </main>
   );
 }

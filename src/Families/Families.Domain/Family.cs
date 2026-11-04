@@ -14,13 +14,20 @@ public sealed class Family
     {
         Id = id;
         Name = name;
+        Composition = FamilyComposition.Default;
     }
 
-    private Family() => Name = null!;
+    private Family()
+    {
+        Name = null!;
+        Composition = null!;
+    }
 
     public Guid Id { get; private set; }
 
     public FamilyName Name { get; private set; }
+
+    public FamilyComposition Composition { get; private set; }
 
     public IReadOnlyList<Member> Members => members;
 
@@ -40,6 +47,14 @@ public sealed class Family
         ArgumentNullException.ThrowIfNull(name);
 
         Name = name;
+    }
+
+    /// <summary>Changes the family's size; existing trips keep their own composition.</summary>
+    public void ChangeComposition(FamilyComposition composition)
+    {
+        ArgumentNullException.ThrowIfNull(composition);
+
+        Composition = composition;
     }
 
     public Member AddMember(EmailAddress email)

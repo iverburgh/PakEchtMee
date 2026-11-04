@@ -33,6 +33,40 @@ public sealed class CatalogItemRepositoryTests(CatalogDatabaseFixture fixture) :
     }
 
     [Fact]
+    public async Task An_item_keeps_its_basis_across_a_round_trip()
+    {
+        Category category = await GivenCategoryAsync();
+        CatalogItem created;
+
+        await using (CatalogDbContext context = fixture.CreateContext())
+        {
+            CatalogItemRepository repository = new(context);
+            created = CatalogItem.Create(category, ItemName.Create("Jassen"), Amount.Create(1, null, QuantityBasis.PerChild));
+            repository.Add(created);
+            await repository.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await using CatalogDbContext verify = fixture.CreateContext();
+        CatalogItem? found = await new CatalogItemRepository(verify).FindAsync(created.Id, TestContext.Current.CancellationToken);
+
+        found.ShouldNotBeNull();
+        found.Amount.ShouldBe(Amount.Create(1, null, QuantityBasis.PerChild));
+    }
+
+    [Fact]
+    public async Task An_item_without_an_amount_round_trips_without_one()
+    {
+        Category category = await GivenCategoryAsync();
+        CatalogItem created = await GivenItemAsync(category, "Paspoort");
+
+        await using CatalogDbContext context = fixture.CreateContext();
+        CatalogItem? found = await new CatalogItemRepository(context).FindAsync(created.Id, TestContext.Current.CancellationToken);
+
+        found.ShouldNotBeNull();
+        found.Amount.ShouldBeNull();
+    }
+
+    [Fact]
     public async Task An_item_keeps_its_amount_across_a_round_trip()
     {
         Category category = await GivenCategoryAsync();

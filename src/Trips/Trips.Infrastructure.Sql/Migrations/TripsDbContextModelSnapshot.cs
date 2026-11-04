@@ -93,6 +93,9 @@ namespace Trips.Infrastructure.Sql.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
+                    b.Property<int?>("Total")
+                        .HasColumnType("int");
+
                     b.Property<Guid>("TripId")
                         .HasColumnType("uniqueidentifier");
 
@@ -108,6 +111,27 @@ namespace Trips.Infrastructure.Sql.Migrations
 
             modelBuilder.Entity("Trips.Domain.Trip", b =>
                 {
+                    b.OwnsOne("Trips.Domain.TripComposition", "Composition", b1 =>
+                        {
+                            b1.Property<Guid>("TripId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<int>("Adults")
+                                .HasColumnType("int")
+                                .HasColumnName("Adults");
+
+                            b1.Property<int>("Children")
+                                .HasColumnType("int")
+                                .HasColumnName("Children");
+
+                            b1.HasKey("TripId");
+
+                            b1.ToTable("Trips", "trips");
+
+                            b1.WithOwner()
+                                .HasForeignKey("TripId");
+                        });
+
                     b.OwnsOne("Trips.Domain.TripDates", "Dates", b1 =>
                         {
                             b1.Property<Guid>("TripId")
@@ -128,6 +152,9 @@ namespace Trips.Infrastructure.Sql.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("TripId");
                         });
+
+                    b.Navigation("Composition")
+                        .IsRequired();
 
                     b.Navigation("Dates")
                         .IsRequired();
@@ -154,6 +181,12 @@ namespace Trips.Infrastructure.Sql.Migrations
                         {
                             b1.Property<Guid>("TripItemId")
                                 .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Basis")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)")
+                                .HasColumnName("QuantityBasis");
 
                             b1.Property<int>("Quantity")
                                 .HasColumnType("int")

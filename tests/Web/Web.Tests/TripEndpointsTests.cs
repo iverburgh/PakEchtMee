@@ -176,7 +176,19 @@ public sealed class TripEndpointsTests(ApiFixture fixture) : IClassFixture<ApiFi
 
     internal sealed record IdOnly(Guid Id);
 
-    internal sealed record TripItemResponse(Guid Id, Guid CategoryId, string CategoryName, string Name, int? Quantity, string? Unit, string Status, string? NextStatus, string? PreviousStatus, bool IsDeleted);
+    internal sealed record TripItemResponse(
+        Guid Id,
+        Guid CategoryId,
+        string CategoryName,
+        string Name,
+        int? Quantity,
+        string? Unit,
+        string Basis,
+        int? Total,
+        string Status,
+        string? NextStatus,
+        string? PreviousStatus,
+        bool IsDeleted);
 
     internal sealed record ProgressResponse(int Total, int Active, int Prepared, int Packed, int Loaded, double LoadedShare);
 
@@ -187,6 +199,8 @@ public sealed class TripEndpointsTests(ApiFixture fixture) : IClassFixture<ApiFi
         string Name,
         DateOnly? StartDate,
         DateOnly? EndDate,
+        int Adults,
+        int Children,
         IReadOnlyList<TripCategoryResponse> Categories,
         IReadOnlyList<TripItemResponse> Items,
         ProgressResponse Progress);

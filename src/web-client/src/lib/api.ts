@@ -7,7 +7,9 @@ import { verifySession } from "@/lib/session";
 import type {
   Category,
   CatalogItem,
+  Composition,
   Family,
+  QuantityBasis,
   Me,
   TripDetails,
   TripSummary,
@@ -120,10 +122,16 @@ export const api = {
   listItems: (categoryId: string, includeDeleted = false) =>
     request<CatalogItem[]>(`/api/items?categoryId=${categoryId}&includeDeleted=${includeDeleted}`),
 
-  createItem: (input: { categoryId: string; name: string; quantity: number | null; unit: string | null }) =>
+  createItem: (input: {
+    categoryId: string;
+    name: string;
+    quantity: number | null;
+    unit: string | null;
+    basis: QuantityBasis;
+  }) =>
     request<CatalogItem>("/api/items", { method: "POST", body: JSON.stringify(input) }),
 
-  updateItem: (id: string, input: { name: string; quantity: number | null; unit: string | null }) =>
+  updateItem: (id: string, input: { name: string; quantity: number | null; unit: string | null; basis: QuantityBasis }) =>
     request<CatalogItem>(`/api/items/${id}`, { method: "PUT", body: JSON.stringify(input) }),
 
   moveItem: (id: string, targetCategoryId: string) =>
@@ -163,6 +171,24 @@ export const api = {
 
   restoreTripItem: (tripId: string, itemId: string) =>
     request<TripItem>(`/api/trips/${tripId}/items/${itemId}/restore`, { method: "POST" }),
+
+  changeTripComposition: (tripId: string, composition: Composition) =>
+    request<{ trip: TripDetails; changedTotals: number }>(`/api/trips/${tripId}/composition`, {
+      method: "PUT",
+      body: JSON.stringify(composition),
+    }),
+
+  changeTripItemQuantity: (
+    tripId: string,
+    itemId: string,
+    input: { quantity: number | null; unit: string | null; basis: QuantityBasis },
+  ) =>
+    request<TripItem>(`/api/trips/${tripId}/items/${itemId}/quantity`, { method: "PUT", body: JSON.stringify(input) }),
+
+  getFamilyComposition: () => request<Composition>("/api/family/composition"),
+
+  changeFamilyComposition: (composition: Composition) =>
+    request<Composition>("/api/family/composition", { method: "PUT", body: JSON.stringify(composition) }),
 
   listFamilies: () => request<Family[]>("/api/admin/families"),
 

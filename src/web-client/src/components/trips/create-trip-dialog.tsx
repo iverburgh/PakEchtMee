@@ -82,7 +82,7 @@ export function CreateTripDialog() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Nieuw uitje</DialogTitle>
-          <DialogDescription>Datums zijn optioneel.</DialogDescription>
+          <DialogDescription>Datums zijn optioneel. Het uitje neemt de samenstelling van je gezin over.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(submit)} className="flex flex-col gap-4">
           <Field id="trip-name" label="Naam" error={errors.name?.message}>

@@ -29,6 +29,13 @@ internal sealed class TripConfiguration : IEntityTypeConfiguration<Trip>
         });
         builder.Navigation(trip => trip.Dates).IsRequired();
 
+        builder.OwnsOne(trip => trip.Composition, composition =>
+        {
+            composition.Property(value => value.Adults).HasColumnName("Adults");
+            composition.Property(value => value.Children).HasColumnName("Children");
+        });
+        builder.Navigation(trip => trip.Composition).IsRequired();
+
         builder.HasMany(trip => trip.Categories)
             .WithOne()
             .HasForeignKey(category => category.TripId)

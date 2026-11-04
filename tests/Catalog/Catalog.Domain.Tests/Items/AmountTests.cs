@@ -1,4 +1,4 @@
-using Catalog.Domain.Items;
+﻿using Catalog.Domain.Items;
 using Shared.Validation;
 using Shouldly;
 using Xunit;
@@ -47,4 +47,47 @@ public sealed class AmountTests
     [Fact]
     public void Compares_by_value()
         => Amount.Create(7, "pair").ShouldBe(Amount.Create(7, "pair"));
+
+    [Fact]
+    public void The_basis_defaults_to_fixed()
+        => Amount.Create(2, null)!.Basis.ShouldBe(QuantityBasis.Fixed);
+
+    [Fact]
+    public void Renders_a_quantity_per_child()
+        => Amount.Create(1, null, QuantityBasis.PerChild)!.ToString().ShouldBe("1 per kind");
+
+    [Fact]
+    public void Renders_a_quantity_with_a_unit_per_person()
+        => Amount.Create(2, "liter", QuantityBasis.PerPerson)!.ToString().ShouldBe("2 liter per persoon");
+
+    [Fact]
+    public void Renders_a_quantity_per_adult()
+        => Amount.Create(1, null, QuantityBasis.PerAdult)!.ToString().ShouldBe("1 per volwassene");
+
+    [Fact]
+    public void A_basis_without_a_quantity_is_rejected()
+        => Should.Throw<DomainValidationException>(() => Amount.Create(null, null, QuantityBasis.PerAdult));
+
+    [Fact]
+    public void An_undefined_basis_is_rejected()
+        => Should.Throw<DomainValidationException>(() => Amount.Create(1, null, (QuantityBasis)42));
+
+    [Fact]
+    public void Amounts_with_another_basis_differ()
+        => Amount.Create(1, null, QuantityBasis.PerChild).ShouldNotBe(Amount.Create(1, null));
+
+    [Theory]
+    [InlineData(null, QuantityBasis.Fixed)]
+    [InlineData("", QuantityBasis.Fixed)]
+    [InlineData("PerChild", QuantityBasis.PerChild)]
+    [InlineData("perperson", QuantityBasis.PerPerson)]
+    [InlineData(" PerAdult ", QuantityBasis.PerAdult)]
+    public void Parses_the_api_value(string? value, QuantityBasis expected)
+        => QuantityBases.Parse(value).ShouldBe(expected);
+
+    [Theory]
+    [InlineData("PerDog")]
+    [InlineData("7")]
+    public void Rejects_an_unknown_api_value(string value)
+        => Should.Throw<DomainValidationException>(() => QuantityBases.Parse(value));
 }

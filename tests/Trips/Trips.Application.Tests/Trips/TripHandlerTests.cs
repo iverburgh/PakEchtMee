@@ -17,7 +17,7 @@ public sealed class TripHandlerTests
     public async Task Creating_a_trip_with_dates_stores_it()
     {
         Result<TripSummaryDto, Exception> result = await harness.Mediator.Send(
-            new CreateTripHandler.Command(TripsHarness.Family, "Summer France", new DateOnly(2026, 7, 4), new DateOnly(2026, 7, 18)),
+            new CreateTripHandler.Command(TripsHarness.Family, "Summer France", new DateOnly(2026, 7, 4), new DateOnly(2026, 7, 18), 2, 0),
             TestContext.Current.CancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
@@ -31,7 +31,7 @@ public sealed class TripHandlerTests
     public async Task Creating_a_trip_without_dates_is_allowed()
     {
         Result<TripSummaryDto, Exception> result = await harness.Mediator.Send(
-            new CreateTripHandler.Command(TripsHarness.Family, "Day at the beach", null, null), TestContext.Current.CancellationToken);
+            new CreateTripHandler.Command(TripsHarness.Family, "Day at the beach", null, null, 2, 0), TestContext.Current.CancellationToken);
 
         result.IsSuccess.ShouldBeTrue();
         result.Value.StartDate.ShouldBeNull();
@@ -41,7 +41,7 @@ public sealed class TripHandlerTests
     public async Task Creating_a_trip_with_an_end_before_the_start_is_rejected()
     {
         Result<TripSummaryDto, Exception> result = await harness.Mediator.Send(
-            new CreateTripHandler.Command(TripsHarness.Family, "Summer France", new DateOnly(2026, 7, 18), new DateOnly(2026, 7, 4)),
+            new CreateTripHandler.Command(TripsHarness.Family, "Summer France", new DateOnly(2026, 7, 18), new DateOnly(2026, 7, 4), 2, 0),
             TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
@@ -57,7 +57,7 @@ public sealed class TripHandlerTests
             .ThrowsAsync(new InvalidOperationException("database unavailable"));
 
         Result<TripSummaryDto, Exception> result = await harness.Mediator.Send(
-            new CreateTripHandler.Command(TripsHarness.Family, "Summer France", null, null), TestContext.Current.CancellationToken);
+            new CreateTripHandler.Command(TripsHarness.Family, "Summer France", null, null, 2, 0), TestContext.Current.CancellationToken);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBeOfType<InvalidOperationException>();

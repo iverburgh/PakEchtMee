@@ -1,4 +1,6 @@
 using CSharpFunctionalExtensions;
+using Families.Application.Composition;
+using Families.Application.Contracts;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Trips.Application.Contracts;
@@ -32,10 +34,18 @@ internal static class TripEndpoints
                 cancellationToken)).ToHttpResult())
             .WithName("GetTrip");
 
-        group.MapPost("/", async (CreateTripRequest request, CurrentUser user, ISender sender, CancellationToken cancellationToken) =>
-            (await sender.Send(new CreateTripHandler.Command(user.FamilyId!.Value, request.Name, request.StartDate, request.EndDate), cancellationToken))
-                .ToHttpResult(trip => Results.Created($"/api/trips/{trip.Id}", trip)))
-            .WithName("CreateTrip");
+        group.MapPost("/", CreateTripAsync).WithName("CreateTrip");
+
+        group.MapPut("/{tripId:guid}/composition", async (
+            Guid tripId,
+            FamilyEndpoints.CompositionRequest request,
+            CurrentUser user,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+            (await sender.Send(
+                new ChangeTripCompositionHandler.Command(user.FamilyId!.Value, tripId, request.Adults, request.Children),
+                cancellationToken)).ToHttpResult())
+            .WithName("ChangeTripComposition");
 
         group.MapPost("/{tripId:guid}/categories", SelectCategoriesAsync).WithName("SelectTripCategories");
 
@@ -66,6 +76,47 @@ internal static class TripEndpoints
         group.MapPost("/{tripId:guid}/items/{itemId:guid}/restore", async (Guid tripId, Guid itemId, CurrentUser user, ISender sender, CancellationToken cancellationToken) =>
             (await sender.Send(new RestoreTripItemHandler.Command(user.FamilyId!.Value, tripId, itemId), cancellationToken)).ToHttpResult())
             .WithName("RestoreTripItem");
+
+        group.MapPut("/{tripId:guid}/items/{itemId:guid}/quantity", async (
+            Guid tripId,
+            Guid itemId,
+            QuantityRequest request,
+            CurrentUser user,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+            (await sender.Send(
+                new ChangeTripItemAmountHandler.Command(user.FamilyId!.Value, tripId, itemId, request.Quantity, request.Unit, request.Basis),
+                cancellationToken)).ToHttpResult())
+            .WithName("ChangeTripItemQuantity");
+    }
+
+    /// <summary>
+    /// A new trip takes over the family's composition. The server reads it rather than trusting the client, and passes it
+    /// in, so the trips context never reads the family itself.
+    /// </summary>
+    private static async Task<IResult> CreateTripAsync(
+        CreateTripRequest request,
+        CurrentUser user,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Guid familyId = user.FamilyId!.Value;
+        Result<FamilyCompositionDto, Exception> composition =
+            await sender.Send(new GetFamilyCompositionHandler.Query(familyId), cancellationToken);
+
+        if (composition.IsFailure)
+            return composition.ToHttpResult();
+
+        return (await sender.Send(
+                new CreateTripHandler.Command(
+                    familyId,
+                    request.Name,
+                    request.StartDate,
+                    request.EndDate,
+                    composition.Value.Adults,
+                    composition.Value.Children),
+                cancellationToken))
+            .ToHttpResult(trip => Results.Created($"/api/trips/{trip.Id}", trip));
     }
 
     /// <summary>
@@ -91,4 +142,6 @@ internal static class TripEndpoints
     internal sealed record CreateTripRequest(string? Name, DateOnly? StartDate, DateOnly? EndDate);
 
     internal sealed record SelectCategoriesRequest(IReadOnlyList<Guid> CategoryIds);
+
+    internal sealed record QuantityRequest(int? Quantity, string? Unit, string? Basis);
 }

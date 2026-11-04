@@ -1,6 +1,8 @@
 using Catalog.Domain;
 using Catalog.Infrastructure.Sql.Seeding;
 using CSharpFunctionalExtensions;
+using Families.Application.Composition;
+using Families.Application.Contracts;
 using Families.Domain;
 using MediatR;
 using Trips.Domain;
@@ -82,6 +84,20 @@ internal sealed class DevelopmentSeeder(
         if (selections.IsFailure)
             throw new InvalidOperationException($"Reading the catalog for seed trip '{name}' failed.", selections.Error);
 
-        return await tripsSeeder.SeedAsync(new TripSeed(id, KnownFamilies.Verburgh, name, selections.Value, deletedSourceItemIds), cancellationToken);
+        Result<FamilyCompositionDto, Exception> composition =
+            await sender.Send(new GetFamilyCompositionHandler.Query(KnownFamilies.Verburgh), cancellationToken);
+
+        if (composition.IsFailure)
+            throw new InvalidOperationException($"Reading the family composition for seed trip '{name}' failed.", composition.Error);
+
+        TripSeed seed = new(
+            id,
+            KnownFamilies.Verburgh,
+            name,
+            TripComposition.Create(composition.Value.Adults, composition.Value.Children),
+            selections.Value,
+            deletedSourceItemIds);
+
+        return await tripsSeeder.SeedAsync(seed, cancellationToken);
     }
 }

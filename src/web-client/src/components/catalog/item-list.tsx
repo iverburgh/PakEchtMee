@@ -6,6 +6,7 @@ import { FolderInput, MoreVertical, PackageOpen, Pencil, Plus, RotateCcw, Trash2
 import { toast } from "sonner";
 import type { CatalogItem, Category } from "@/lib/types";
 import { describeAmount } from "@/lib/types";
+import { RuleChip } from "@/components/quantity-badge";
 import {
   createItemAction,
   moveItemAction,
@@ -88,14 +89,18 @@ export function ItemList({
 
       <ul className="flex flex-col gap-2">
         {live.map((item) => {
-          const amount = describeAmount(item.quantity, item.unit);
+          // A fixed amount reads best as plain text; a per-head rule gets its coloured chip.
+          const amount = item.basis === "Fixed" ? describeAmount(item.quantity, item.unit) : "";
 
           return (
             <li key={item.id}>
               <Card className="flex min-h-16 flex-row items-center gap-2 p-3">
-                <span className="min-w-0 flex-1 truncate">
-                  {item.name}
-                  {amount ? <span className="text-muted-foreground"> {amount}</span> : null}
+                <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="truncate">
+                    {item.name}
+                    {amount ? <span className="text-muted-foreground"> {amount}</span> : null}
+                  </span>
+                  <RuleChip quantity={item.quantity} unit={item.unit} basis={item.basis} />
                 </span>
                 {readOnly ? null : (
                 <DropdownMenu>

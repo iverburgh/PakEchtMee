@@ -39,6 +39,20 @@ public sealed class DevelopmentSeedEndpointsTests(DevelopmentApiFixture fixture)
     }
 
     [Fact]
+    public async Task The_camping_trip_counts_per_head_items_for_verburgh()
+    {
+        TripDetailsResponse trip = await GetTripAsync(DevelopmentSeeder.CampingTripId);
+
+        trip.Adults.ShouldBe(2);
+        trip.Children.ShouldBe(3);
+        TripItemResponse sleepingBag = trip.Items.Single(item => item.Name == "Slaapzak");
+        sleepingBag.Basis.ShouldBe("PerChild");
+        sleepingBag.Total.ShouldBe(3);
+        trip.Items.Single(item => item.Name == "Borden").Total.ShouldBe(5);
+        trip.Items.Single(item => item.Name == "Jas").Total.ShouldBe(2);
+    }
+
+    [Fact]
     public async Task The_winter_sports_trip_leaves_out_camping_and_summer_items()
     {
         TripDetailsResponse trip = await GetTripAsync(DevelopmentSeeder.WinterSportsTripId);

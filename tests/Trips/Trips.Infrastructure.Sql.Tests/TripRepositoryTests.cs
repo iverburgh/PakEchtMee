@@ -44,6 +44,44 @@ public sealed class TripRepositoryTests(TripsDatabaseFixture fixture) : IClassFi
     }
 
     [Fact]
+    public async Task Composition_rules_and_totals_round_trip()
+    {
+        Guid tripId;
+        Guid jacketsId;
+
+        await using (TripsDbContext context = fixture.CreateContext())
+        {
+            TripRepository repository = new(context);
+            Trip trip = Trip.Create(Family, TripName.Create($"Trip {Guid.NewGuid():N}"), TripDates.None, TripComposition.Create(2, 3));
+            CatalogItemSnapshot jackets = new(Guid.CreateVersion7(), "Jassen", 1, null, QuantityBasis.PerChild);
+            CatalogItemSnapshot umbrella = new(Guid.CreateVersion7(), "Paraplu", null, null);
+            trip.SelectCategories([new CategorySelection(Guid.CreateVersion7(), "Buitenkleding", [jackets, umbrella])]);
+            repository.Add(trip);
+            await repository.SaveChangesAsync(TestContext.Current.CancellationToken);
+            tripId = trip.Id;
+            jacketsId = trip.Items.Single(item => item.Name == "Jassen").Id;
+        }
+
+        await using (TripsDbContext context = fixture.CreateContext())
+        {
+            TripRepository repository = new(context);
+            Trip trip = (await repository.FindAsync(tripId, Family, TestContext.Current.CancellationToken))!;
+            trip.ChangeComposition(TripComposition.Create(1, 2));
+            await repository.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await using TripsDbContext verify = fixture.CreateContext();
+        Trip? found = await new TripRepository(verify).FindAsync(tripId, Family, TestContext.Current.CancellationToken);
+
+        found.ShouldNotBeNull();
+        found.Composition.ShouldBe(TripComposition.Create(1, 2));
+        TripItem foundJackets = found.Items.Single(item => item.Id == jacketsId);
+        foundJackets.Amount.ShouldBe(Amount.Create(1, null, QuantityBasis.PerChild));
+        foundJackets.Total.ShouldBe(2);
+        found.Items.Single(item => item.Name == "Paraplu").Total.ShouldBeNull();
+    }
+
+    [Fact]
     public async Task An_unknown_trip_returns_nothing()
     {
         await using TripsDbContext context = fixture.CreateContext();

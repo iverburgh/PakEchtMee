@@ -4,6 +4,7 @@ import { api } from "@/lib/api";
 import { orNotFound } from "@/lib/or-not-found";
 import { Button } from "@/components/ui/button";
 import { TripWorkspace } from "@/components/trips/trip-workspace";
+import { CompositionDialog } from "@/components/trips/composition-dialog";
 
 export default async function TripPage({ params }: PageProps<"/trips/[tripId]">) {
   const { tripId } = await params;
@@ -26,12 +27,15 @@ export default async function TripPage({ params }: PageProps<"/trips/[tripId]">)
         </Link>
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-xl font-semibold tracking-tight">{trip.name}</h1>
-          {range ? (
-            <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
-              <CalendarDays className="size-3.5" aria-hidden />
-              {range}
-            </p>
-          ) : null}
+          <div className="flex flex-wrap items-center gap-x-3">
+            {range ? (
+              <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                <CalendarDays className="size-3.5" aria-hidden />
+                {range}
+              </p>
+            ) : null}
+            <CompositionDialog tripId={trip.id} composition={{ adults: trip.adults, children: trip.children }} />
+          </div>
         </div>
         <Button
           render={<Link href={`/trips/${tripId}/categorieen`} aria-label="Categorieën kiezen" />}

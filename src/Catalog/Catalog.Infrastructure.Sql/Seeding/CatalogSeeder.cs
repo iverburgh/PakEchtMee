@@ -97,7 +97,7 @@ public sealed class CatalogSeeder(CatalogDbContext context, ILogger<CatalogSeede
                 continue;
             }
 
-            context.Items.Add(CatalogItem.Create(seedItem.Id, category, ItemName.Create(seedItem.Name), Amount.Create(seedItem.Quantity, null)));
+            context.Items.Add(CatalogItem.Create(seedItem.Id, category, ItemName.Create(seedItem.Name), Amount.Create(seedItem.Quantity, null, seedItem.Basis)));
             added++;
         }
 

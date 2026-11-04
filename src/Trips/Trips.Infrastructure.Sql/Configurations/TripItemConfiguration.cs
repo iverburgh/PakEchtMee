@@ -24,7 +24,12 @@ internal sealed class TripItemConfiguration : IEntityTypeConfiguration<TripItem>
         {
             amount.Property(value => value.Quantity).HasColumnName("Quantity");
             amount.Property(value => value.Unit).HasColumnName("Unit").HasMaxLength(Amount.MaxUnitLength);
+
+            // Nullable because an item without an amount has none.
+            amount.Property(value => value.Basis).HasColumnName("QuantityBasis").HasConversion<string>().HasMaxLength(20);
         });
+
+        builder.Property(item => item.Total);
 
         // Two overlapping taps in the walkthrough must fail loudly instead of silently losing one.
         builder.Property<byte[]>("RowVersion").IsRowVersion();

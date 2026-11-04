@@ -5,7 +5,15 @@ namespace Trips.Domain;
 /// <summary>One line on a trip's packing list. Status changes always go through the owning <see cref="Trip"/>.</summary>
 public sealed class TripItem
 {
-    private TripItem(Guid id, Guid tripId, Guid sourceCategoryId, Guid sourceItemId, string categoryName, string name, Amount? amount)
+    private TripItem(
+        Guid id,
+        Guid tripId,
+        Guid sourceCategoryId,
+        Guid sourceItemId,
+        string categoryName,
+        string name,
+        Amount? amount,
+        TripComposition composition)
     {
         Id = id;
         TripId = tripId;
@@ -14,6 +22,7 @@ public sealed class TripItem
         CategoryName = categoryName;
         Name = name;
         Amount = amount;
+        Total = amount?.TotalFor(composition);
         Status = PackingStatus.Active;
     }
 
@@ -37,7 +46,14 @@ public sealed class TripItem
 
     public string Name { get; private set; }
 
+    /// <summary>The quantity rule: copied from the catalog, and changeable on the trip while the item is still to do.</summary>
     public Amount? Amount { get; private set; }
+
+    /// <summary>
+    /// How many to pack, calculated from <see cref="Amount"/> and the trip's composition. Stored rather than derived, so an
+    /// item that has progressed keeps the total it was packed with when the composition changes later.
+    /// </summary>
+    public int? Total { get; private set; }
 
     public PackingStatus Status { get; private set; }
 
@@ -47,9 +63,15 @@ public sealed class TripItem
 
     public PackingStatusTransition Transition => new(Status);
 
-    internal static TripItem Create(Guid tripId, Guid sourceCategoryId, string categoryName, CatalogItemSnapshot snapshot)
+    internal static TripItem Create(
+        Guid tripId,
+        Guid sourceCategoryId,
+        string categoryName,
+        CatalogItemSnapshot snapshot,
+        TripComposition composition)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
+        ArgumentNullException.ThrowIfNull(composition);
 
         return new TripItem(
             Guid.CreateVersion7(),
@@ -58,7 +80,37 @@ public sealed class TripItem
             snapshot.SourceItemId,
             Guard.RequiredText(categoryName, 60, "Categorienaam"),
             Guard.RequiredText(snapshot.Name, 100, "Itemnaam"),
-            Amount.Create(snapshot.Quantity, snapshot.Unit));
+            Amount.Create(snapshot.Quantity, snapshot.Unit, snapshot.Basis),
+            composition);
+    }
+
+    /// <summary>Replaces the quantity rule; only while the item is still to do, because a packed total must stay what was packed.</summary>
+    internal void ChangeAmount(Amount? amount, TripComposition composition)
+    {
+        EnsureNotDeleted();
+
+        if (Status is not PackingStatus.Active)
+            throw new DomainValidationException($"'{Name}' is al opgepakt; het aantal kan alleen bij Te doen worden gewijzigd.");
+
+        Amount = amount;
+        Total = amount?.TotalFor(composition);
+    }
+
+    /// <summary>Follows a new trip composition. Only items still to do with a per-head rule change; everything else keeps its total.</summary>
+    /// <returns><c>true</c> when the total changed.</returns>
+    internal bool FollowComposition(TripComposition composition)
+    {
+        if (IsDeleted || Status is not PackingStatus.Active || Amount is null || Amount.Basis is QuantityBasis.Fixed)
+            return false;
+
+        int total = Amount.TotalFor(composition);
+
+        if (total == Total)
+            return false;
+
+        Total = total;
+
+        return true;
     }
 
     internal void ChangeStatus(PackingStatus target)

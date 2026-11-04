@@ -22,7 +22,7 @@ public sealed class TripFamilyTests
     [Fact]
     public async Task A_new_trip_belongs_to_the_callers_family()
     {
-        await harness.Mediator.Send(new CreateTripHandler.Command(TripsHarness.Family, "Kust", null, null), CancellationToken);
+        await harness.Mediator.Send(new CreateTripHandler.Command(TripsHarness.Family, "Kust", null, null, 2, 0), CancellationToken);
 
         harness.Repository.Verify(repository => repository.Add(It.Is<Trip>(trip => trip.FamilyId == TripsHarness.Family)), Times.Once);
     }

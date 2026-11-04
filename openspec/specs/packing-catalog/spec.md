@@ -76,7 +76,7 @@ The system SHALL allow a user to create, rename, move and remove catalog items i
 
 ### Requirement: Optional quantity and unit on a catalog item
 
-The system SHALL allow a catalog item to optionally carry a quantity and a unit. When present, the quantity SHALL be an integer of at least 1 and at most 9999. A unit SHALL be at most 20 characters and SHALL only be accepted when a quantity is present. An item without a quantity SHALL be treated as a plain item with no amount shown.
+The system SHALL allow a catalog item to optionally carry a quantity rule: a quantity, a basis and a unit. When present, the quantity SHALL be an integer of at least 1 and at most 9999. The basis SHALL be one of fixed, per person, per adult or per child, and SHALL default to fixed. A unit SHALL be at most 20 characters and SHALL only be accepted when a quantity is present. An item without a quantity SHALL be treated as a plain item with no amount shown.
 
 #### Scenario: Item with quantity and unit
 
@@ -101,6 +101,21 @@ The system SHALL allow a catalog item to optionally carry a quantity and a unit.
 #### Scenario: Non-positive quantity is rejected
 
 - **WHEN** a user submits an item with quantity 0 or a negative quantity
+- **THEN** the system rejects the request with a validation error
+
+#### Scenario: Item with a quantity per child
+
+- **WHEN** a user adds "Jassen" with quantity 1 and basis per child
+- **THEN** the catalog shows "Jassen" with the rule "1 per kind"
+
+#### Scenario: Quantity per person with a unit
+
+- **WHEN** a user adds "Water" with quantity 2, unit "liter" and basis per person
+- **THEN** the catalog shows "Water" with the rule "2 liter per persoon"
+
+#### Scenario: Basis without quantity is rejected
+
+- **WHEN** a user submits an item with basis per adult and no quantity
 - **THEN** the system rejects the request with a validation error
 
 ### Requirement: Catalog data is private to its family

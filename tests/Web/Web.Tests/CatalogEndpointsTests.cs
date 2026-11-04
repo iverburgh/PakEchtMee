@@ -138,5 +138,5 @@ public sealed class CatalogEndpointsTests(ApiFixture fixture) : IClassFixture<Ap
 
     internal sealed record CategoryResponse(Guid Id, string Name, bool IsDeleted);
 
-    internal sealed record ItemResponse(Guid Id, Guid CategoryId, string Name, int? Quantity, string? Unit, bool IsDeleted);
+    internal sealed record ItemResponse(Guid Id, Guid CategoryId, string Name, int? Quantity, string? Unit, string Basis, bool IsDeleted);
 }

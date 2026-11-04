@@ -11,18 +11,20 @@ public sealed class Trip
     private readonly List<TripCategory> categories = [];
     private readonly List<TripItem> items = [];
 
-    private Trip(Guid id, Guid familyId, TripName name, TripDates dates)
+    private Trip(Guid id, Guid familyId, TripName name, TripDates dates, TripComposition composition)
     {
         Id = id;
         FamilyId = familyId;
         Name = name;
         Dates = dates;
+        Composition = composition;
     }
 
     private Trip()
     {
         Name = null!;
         Dates = null!;
+        Composition = null!;
     }
 
     public Guid Id { get; private set; }
@@ -34,21 +36,26 @@ public sealed class Trip
 
     public TripDates Dates { get; private set; }
 
+    /// <summary>Who comes along: a copy of the family's composition when the trip is created, changeable per trip.</summary>
+    public TripComposition Composition { get; private set; }
+
     public IReadOnlyList<TripCategory> Categories => categories;
 
     public IReadOnlyList<TripItem> Items => items;
 
-    public static Trip Create(Guid familyId, TripName name, TripDates dates) => Create(Guid.CreateVersion7(), familyId, name, dates);
+    /// <summary>Creates a trip for the family's composition, or <see cref="TripComposition.Default"/> when it is not given.</summary>
+    public static Trip Create(Guid familyId, TripName name, TripDates dates, TripComposition? composition = null)
+        => Create(Guid.CreateVersion7(), familyId, name, dates, composition);
 
     /// <summary>Creates a trip with a caller-chosen id, so seed data keeps the same id across runs.</summary>
-    public static Trip Create(Guid id, Guid familyId, TripName name, TripDates dates)
+    public static Trip Create(Guid id, Guid familyId, TripName name, TripDates dates, TripComposition? composition = null)
     {
         ArgumentOutOfRangeException.ThrowIfEqual(id, Guid.Empty);
         ArgumentOutOfRangeException.ThrowIfEqual(familyId, Guid.Empty);
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(dates);
 
-        return new Trip(id, familyId, name, dates);
+        return new Trip(id, familyId, name, dates, composition ?? TripComposition.Default);
     }
 
     /// <summary>Adds the given categories and their items; items that already exist are restored rather than duplicated.</summary>
@@ -66,7 +73,7 @@ public sealed class Trip
                 TripItem? existing = items.Find(item => item.SourceItemId == snapshot.SourceItemId);
 
                 if (existing is null)
-                    items.Add(TripItem.Create(Id, selection.CategoryId, selection.Name, snapshot));
+                    items.Add(TripItem.Create(Id, selection.CategoryId, selection.Name, snapshot, Composition));
                 else if (existing.IsDeleted)
                     existing.Restore();
             }
@@ -113,6 +120,26 @@ public sealed class Trip
     {
         TripItem item = RequireItem(itemId);
         item.ChangeStatus(target);
+
+        return item;
+    }
+
+    /// <summary>Changes who comes along and recalculates the per-head totals of the items that are still to do.</summary>
+    /// <returns>How many totals changed, so the user can be told what the change did.</returns>
+    public int ChangeComposition(TripComposition composition)
+    {
+        ArgumentNullException.ThrowIfNull(composition);
+
+        Composition = composition;
+
+        return items.Count(item => item.FollowComposition(composition));
+    }
+
+    /// <summary>Changes one item's quantity rule (or removes it with <c>null</c>); the catalog item is not touched.</summary>
+    public TripItem ChangeItemAmount(Guid itemId, Amount? amount)
+    {
+        TripItem item = RequireItem(itemId);
+        item.ChangeAmount(amount, Composition);
 
         return item;
     }
