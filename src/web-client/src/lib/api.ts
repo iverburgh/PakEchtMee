@@ -10,6 +10,8 @@ import type {
   Composition,
   Family,
   QuantityBasis,
+  QuantityPeriod,
+  TripPlan,
   Me,
   TripDetails,
   TripSummary,
@@ -128,10 +130,14 @@ export const api = {
     quantity: number | null;
     unit: string | null;
     basis: QuantityBasis;
+    period: QuantityPeriod;
   }) =>
     request<CatalogItem>("/api/items", { method: "POST", body: JSON.stringify(input) }),
 
-  updateItem: (id: string, input: { name: string; quantity: number | null; unit: string | null; basis: QuantityBasis }) =>
+  updateItem: (
+    id: string,
+    input: { name: string; quantity: number | null; unit: string | null; basis: QuantityBasis; period: QuantityPeriod },
+  ) =>
     request<CatalogItem>(`/api/items/${id}`, { method: "PUT", body: JSON.stringify(input) }),
 
   moveItem: (id: string, targetCategoryId: string) =>
@@ -172,16 +178,16 @@ export const api = {
   restoreTripItem: (tripId: string, itemId: string) =>
     request<TripItem>(`/api/trips/${tripId}/items/${itemId}/restore`, { method: "POST" }),
 
-  changeTripComposition: (tripId: string, composition: Composition) =>
-    request<{ trip: TripDetails; changedTotals: number }>(`/api/trips/${tripId}/composition`, {
+  changeTripPlan: (tripId: string, plan: TripPlan) =>
+    request<{ trip: TripDetails; changedTotals: number }>(`/api/trips/${tripId}/plan`, {
       method: "PUT",
-      body: JSON.stringify(composition),
+      body: JSON.stringify(plan),
     }),
 
   changeTripItemQuantity: (
     tripId: string,
     itemId: string,
-    input: { quantity: number | null; unit: string | null; basis: QuantityBasis },
+    input: { quantity: number | null; unit: string | null; basis: QuantityBasis; period: QuantityPeriod },
   ) =>
     request<TripItem>(`/api/trips/${tripId}/items/${itemId}/quantity`, { method: "PUT", body: JSON.stringify(input) }),
 

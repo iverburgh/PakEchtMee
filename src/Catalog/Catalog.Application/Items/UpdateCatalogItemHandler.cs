@@ -13,7 +13,7 @@ namespace Catalog.Application.Items;
 public sealed class UpdateCatalogItemHandler(ICategoryRepository categories, ICatalogItemRepository items)
     : IRequestHandler<UpdateCatalogItemHandler.Command, Result>
 {
-    public sealed record Command(CatalogActor Actor, Guid Id, string? Name, int? Quantity, string? Unit, string? Basis = null)
+    public sealed record Command(CatalogActor Actor, Guid Id, string? Name, int? Quantity, string? Unit, string? Basis = null, string? Period = null)
         : IRequest<Result>;
 
     public async Task<Result> Handle(Command request, CancellationToken cancellationToken)
@@ -28,7 +28,7 @@ public sealed class UpdateCatalogItemHandler(ICategoryRepository categories, ICa
 
         CatalogItem item = loaded.Value.Item;
         ItemName name = ItemName.Create(request.Name);
-        Amount? amount = Amount.Create(request.Quantity, request.Unit, QuantityBases.Parse(request.Basis));
+        Amount? amount = Amount.Create(request.Quantity, request.Unit, QuantityBases.Parse(request.Basis), QuantityPeriods.Parse(request.Period));
 
         if (await items.ExistsWithNameInCategoryAsync(item.CategoryId, name, request.Id, cancellationToken))
             return new DomainValidationException($"Er bestaat al een item met de naam '{name}' in deze categorie.");

@@ -63,7 +63,7 @@ public sealed class TripQuantityTests
         trip.AdvanceItem(shoes.Id);
         trip.AdvanceItem(shoes.Id);
 
-        int changed = trip.ChangeComposition(TripComposition.Create(2, 2));
+        int changed = trip.ChangePlan(TripComposition.Create(2, 2), trip.Dates);
 
         changed.ShouldBe(1);
         jackets.Total.ShouldBe(2);
@@ -79,7 +79,7 @@ public sealed class TripQuantityTests
         TripItem jackets = Add(trip, Snapshot("Jassen", 1, QuantityBasis.PerChild));
         trip.DeleteItem(jackets.Id, DateTimeOffset.UtcNow);
 
-        trip.ChangeComposition(TripComposition.Create(2, 1)).ShouldBe(0);
+        trip.ChangePlan(TripComposition.Create(2, 1), trip.Dates).ShouldBe(0);
         jackets.Total.ShouldBe(3);
     }
 
@@ -109,7 +109,7 @@ public sealed class TripQuantityTests
         TripItem towels = Add(trip, Snapshot("Handdoeken", 1, QuantityBasis.PerPerson));
 
         trip.ChangeItemAmount(towels.Id, Amount.Create(4, null));
-        trip.ChangeComposition(TripComposition.Create(2, 1));
+        trip.ChangePlan(TripComposition.Create(2, 1), trip.Dates);
 
         towels.Total.ShouldBe(4);
     }
@@ -121,7 +121,7 @@ public sealed class TripQuantityTests
         TripItem jackets = Add(trip, Snapshot("Jassen", 1, QuantityBasis.PerChild));
         trip.ChangeItemAmount(jackets.Id, Amount.Create(2, null, QuantityBasis.PerChild));
 
-        trip.ChangeComposition(TripComposition.Create(2, 1));
+        trip.ChangePlan(TripComposition.Create(2, 1), trip.Dates);
 
         jackets.Total.ShouldBe(2);
     }

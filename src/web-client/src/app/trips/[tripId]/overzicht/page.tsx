@@ -2,7 +2,16 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { api } from "@/lib/api";
 import { orNotFound } from "@/lib/or-not-found";
-import { describeAmount, describeComposition, describeRule, statusLabels, type PackingStatus, type TripItem } from "@/lib/types";
+import {
+  describeAmount,
+  describeComposition,
+  describeDuration,
+  describeRule,
+  isRule,
+  statusLabels,
+  type PackingStatus,
+  type TripItem,
+} from "@/lib/types";
 import { PrintButton } from "@/components/trips/print-button";
 
 function toArray(value: string | string[] | undefined): string[] {
@@ -77,7 +86,11 @@ export default async function TripOverviewPage({
         <section className="flex flex-col gap-1 border-b pb-3">
           <h2 className="text-2xl font-semibold tracking-tight">{trip.name}</h2>
           {range ? <p className="text-muted-foreground text-sm">{range}</p> : null}
-          <p className="text-muted-foreground text-sm">{describeComposition({ adults: trip.adults, children: trip.children })}</p>
+          <p className="text-muted-foreground text-sm">
+            {[describeComposition({ adults: trip.adults, children: trip.children }), describeDuration(trip.days, trip.nights)]
+              .filter((part) => part !== "")
+              .join(" · ")}
+          </p>
           <p className="text-muted-foreground text-sm">
             {trip.progress.loaded} van {trip.progress.total} ingeladen
             {" · "}
@@ -106,7 +119,7 @@ export default async function TripOverviewPage({
                 {categoryItems.map((item) => {
                   const total = describeAmount(item.total, item.unit);
                   // Text rather than a coloured chip, so the rule survives a black-and-white print.
-                  const rule = item.basis === "Fixed" ? "" : describeRule(item.quantity, item.unit, item.basis);
+                  const rule = isRule(item.basis, item.period) ? describeRule(item.quantity, item.unit, item.basis, item.period) : "";
 
                   return (
                     <li key={item.id} className="flex items-center gap-3 py-2">

@@ -36,16 +36,23 @@ internal static class TripEndpoints
 
         group.MapPost("/", CreateTripAsync).WithName("CreateTrip");
 
-        group.MapPut("/{tripId:guid}/composition", async (
+        // Who comes along and when change in one step, so the totals are recalculated once and never half.
+        group.MapPut("/{tripId:guid}/plan", async (
             Guid tripId,
-            FamilyEndpoints.CompositionRequest request,
+            PlanRequest request,
             CurrentUser user,
             ISender sender,
             CancellationToken cancellationToken) =>
             (await sender.Send(
-                new ChangeTripCompositionHandler.Command(user.FamilyId!.Value, tripId, request.Adults, request.Children),
+                new ChangeTripPlanHandler.Command(
+                    user.FamilyId!.Value,
+                    tripId,
+                    request.Adults,
+                    request.Children,
+                    request.StartDate,
+                    request.EndDate),
                 cancellationToken)).ToHttpResult())
-            .WithName("ChangeTripComposition");
+            .WithName("ChangeTripPlan");
 
         group.MapPost("/{tripId:guid}/categories", SelectCategoriesAsync).WithName("SelectTripCategories");
 
@@ -85,7 +92,7 @@ internal static class TripEndpoints
             ISender sender,
             CancellationToken cancellationToken) =>
             (await sender.Send(
-                new ChangeTripItemAmountHandler.Command(user.FamilyId!.Value, tripId, itemId, request.Quantity, request.Unit, request.Basis),
+                new ChangeTripItemAmountHandler.Command(user.FamilyId!.Value, tripId, itemId, request.Quantity, request.Unit, request.Basis, request.Period),
                 cancellationToken)).ToHttpResult())
             .WithName("ChangeTripItemQuantity");
     }
@@ -143,5 +150,7 @@ internal static class TripEndpoints
 
     internal sealed record SelectCategoriesRequest(IReadOnlyList<Guid> CategoryIds);
 
-    internal sealed record QuantityRequest(int? Quantity, string? Unit, string? Basis);
+    internal sealed record QuantityRequest(int? Quantity, string? Unit, string? Basis, string? Period);
+
+    internal sealed record PlanRequest(int Adults, int Children, DateOnly? StartDate, DateOnly? EndDate);
 }

@@ -33,7 +33,7 @@ public sealed class AddQuantityBasisMigrationTests(SqlServerTestContainerFixture
         };
 
         listed.Order().ShouldBe(CatalogSeedData.PerHead
-            .Where(entry => entry.Value == basis)
+            .Where(entry => entry.Value == new SeedRule(basis))
             .Select(entry => SeedItem(entry.Key.Category, entry.Key.Item))
             .Order());
     }

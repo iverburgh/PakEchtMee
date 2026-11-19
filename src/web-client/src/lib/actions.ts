@@ -3,7 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { ApiError, api } from "@/lib/api";
-import type { CatalogItem, Category, Composition, Family, QuantityBasis, TripItem, TripSummary } from "@/lib/types";
+import type {
+  CatalogItem,
+  Category,
+  Composition,
+  Family,
+  QuantityBasis,
+  QuantityPeriod,
+  TripItem,
+  TripPlan,
+  TripSummary,
+} from "@/lib/types";
 
 export type ActionResult<T> =
   | { ok: true; value: T }
@@ -67,6 +77,7 @@ export async function createItemAction(input: {
   quantity: number | null;
   unit: string | null;
   basis: QuantityBasis;
+  period: QuantityPeriod;
 }): Promise<ActionResult<CatalogItem>> {
   const result = await run(() => api.createItem(input));
   revalidatePath(`/catalogus/${input.categoryId}`);
@@ -77,7 +88,7 @@ export async function createItemAction(input: {
 export async function updateItemAction(
   categoryId: string,
   id: string,
-  input: { name: string; quantity: number | null; unit: string | null; basis: QuantityBasis },
+  input: { name: string; quantity: number | null; unit: string | null; basis: QuantityBasis; period: QuantityPeriod },
 ): Promise<ActionResult<CatalogItem>> {
   const result = await run(() => api.updateItem(id, input));
   revalidatePath(`/catalogus/${categoryId}`);
@@ -170,14 +181,13 @@ export async function restoreTripItemAction(tripId: string, itemId: string): Pro
   return result;
 }
 
-/** Changes who comes along on one trip; reports how many totals of items still to do were recalculated. */
-export async function changeTripCompositionAction(
-  tripId: string,
-  composition: Composition,
-): Promise<ActionResult<{ changedTotals: number }>> {
-  const result = await run(() => api.changeTripComposition(tripId, composition));
+/** Changes who comes along and when on one trip; reports how many totals of items still to do were recalculated. */
+export async function changeTripPlanAction(tripId: string, plan: TripPlan): Promise<ActionResult<{ changedTotals: number }>> {
+  const result = await run(() => api.changeTripPlan(tripId, plan));
   revalidatePath(`/trips/${tripId}`);
   revalidatePath(`/trips/${tripId}/overzicht`);
+  // Changed dates can reorder the trip list.
+  revalidatePath("/");
 
   return result.ok ? { ok: true, value: { changedTotals: result.value.changedTotals } } : result;
 }
@@ -185,7 +195,7 @@ export async function changeTripCompositionAction(
 export async function changeTripItemQuantityAction(
   tripId: string,
   itemId: string,
-  input: { quantity: number | null; unit: string | null; basis: QuantityBasis },
+  input: { quantity: number | null; unit: string | null; basis: QuantityBasis; period: QuantityPeriod },
 ): Promise<ActionResult<TripItem>> {
   const result = await run(() => api.changeTripItemQuantity(tripId, itemId, input));
   revalidatePath(`/trips/${tripId}`);

@@ -28,6 +28,7 @@ internal sealed class CatalogItemConfiguration : IEntityTypeConfiguration<Catalo
 
             // Stored by name, like a status would be read in the database; nullable because an item without an amount has none.
             amount.Property(value => value.Basis).HasColumnName("QuantityBasis").HasConversion<string>().HasMaxLength(20);
+            amount.Property(value => value.Period).HasColumnName("QuantityPeriod").HasConversion<string>().HasMaxLength(20);
         });
 
         builder.Property(item => item.DeletedAt);

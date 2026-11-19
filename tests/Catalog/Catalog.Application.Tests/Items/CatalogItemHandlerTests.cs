@@ -46,6 +46,73 @@ public sealed class CatalogItemHandlerTests
     }
 
     [Fact]
+    public async Task Creating_an_item_with_a_period_stores_the_rule()
+    {
+        Category category = harness.GivenCategory();
+
+        Result<CatalogItemDto, Exception> result = await harness.Mediator.Send(
+            new CreateCatalogItemHandler.Command(CatalogHarness.Member, category.Id, "Sokken", 1, null, "PerChild", "PerDay"),
+            TestContext.Current.CancellationToken);
+
+        result.Value.Period.ShouldBe("PerDay");
+        harness.Items.Verify(
+            repository => repository.Add(It.Is<CatalogItem>(item => item.Amount!.Period == QuantityPeriod.PerDay)), Times.Once);
+    }
+
+    [Fact]
+    public async Task Creating_an_item_without_a_period_makes_it_once_per_trip()
+    {
+        Category category = harness.GivenCategory();
+
+        Result<CatalogItemDto, Exception> result = await harness.Mediator.Send(
+            new CreateCatalogItemHandler.Command(CatalogHarness.Member, category.Id, "Jassen", 1, null, "PerChild"), TestContext.Current.CancellationToken);
+
+        result.Value.Period.ShouldBe("PerTrip");
+    }
+
+    [Fact]
+    public async Task Creating_an_item_with_an_unknown_period_is_rejected()
+    {
+        Category category = harness.GivenCategory();
+
+        Result<CatalogItemDto, Exception> result = await harness.Mediator.Send(
+            new CreateCatalogItemHandler.Command(CatalogHarness.Member, category.Id, "Sokken", 1, null, "PerChild", "PerWeek"),
+            TestContext.Current.CancellationToken);
+
+        result.Error.ShouldBeOfType<DomainValidationException>();
+        harness.Items.Verify(repository => repository.Add(It.IsAny<CatalogItem>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Updating_an_item_changes_its_period()
+    {
+        Category category = harness.GivenCategory();
+        CatalogItem item = harness.GivenItem(category, "Theezakjes", 2);
+
+        Result<CatalogItemDto, Exception> result = await harness.Mediator.Send(
+            new UpdateCatalogItemHandler.Command(CatalogHarness.Member, item.Id, "Theezakjes", 2, null, "Fixed", "PerNight"),
+            TestContext.Current.CancellationToken);
+
+        result.Value.Period.ShouldBe("PerNight");
+        item.Amount!.Period.ShouldBe(QuantityPeriod.PerNight);
+    }
+
+    [Fact]
+    public async Task A_failing_repository_while_saving_a_period_becomes_a_failure()
+    {
+        Category category = harness.GivenCategory();
+        harness.Items
+            .Setup(repository => repository.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("database down"));
+
+        Result<CatalogItemDto, Exception> result = await harness.Mediator.Send(
+            new CreateCatalogItemHandler.Command(CatalogHarness.Member, category.Id, "Sokken", 1, null, "PerChild", "PerDay"),
+            TestContext.Current.CancellationToken);
+
+        result.Error.ShouldBeOfType<InvalidOperationException>();
+    }
+
+    [Fact]
     public async Task Creating_an_item_without_a_basis_makes_it_fixed()
     {
         Category category = harness.GivenCategory();

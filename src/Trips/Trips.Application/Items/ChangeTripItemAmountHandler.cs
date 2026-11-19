@@ -10,7 +10,8 @@ namespace Trips.Application.Items;
 public sealed class ChangeTripItemAmountHandler(ITripRepository repository)
     : IRequestHandler<ChangeTripItemAmountHandler.Command, Result>
 {
-    public sealed record Command(Guid FamilyId, Guid TripId, Guid ItemId, int? Quantity, string? Unit, string? Basis) : IRequest<Result>;
+    public sealed record Command(Guid FamilyId, Guid TripId, Guid ItemId, int? Quantity, string? Unit, string? Basis, string? Period = null)
+        : IRequest<Result>;
 
     public async Task<Result> Handle(Command request, CancellationToken cancellationToken)
     {
@@ -21,7 +22,8 @@ public sealed class ChangeTripItemAmountHandler(ITripRepository repository)
         if (trip is null)
             return NotFoundException.For("Uitje", request.TripId);
 
-        TripItem item = trip.ChangeItemAmount(request.ItemId, Amount.Create(request.Quantity, request.Unit, QuantityBases.Parse(request.Basis)));
+        Amount? amount = Amount.Create(request.Quantity, request.Unit, QuantityBases.Parse(request.Basis), QuantityPeriods.Parse(request.Period));
+        TripItem item = trip.ChangeItemAmount(request.ItemId, amount);
         await repository.SaveChangesAsync(cancellationToken);
 
         return TripItemDto.From(item);

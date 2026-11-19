@@ -155,7 +155,14 @@ export function TripWorkspace({ trip }: { trip: TripDetails }) {
     const details = (
       <>
         <span className="truncate font-medium">{item.name}</span>
-        <QuantityBadge quantity={item.quantity} unit={item.unit} basis={item.basis} total={item.total} />
+        <QuantityBadge
+          quantity={item.quantity}
+          unit={item.unit}
+          basis={item.basis}
+          period={item.period}
+          total={item.total}
+          missingDates={trip.days === null}
+        />
       </>
     );
 

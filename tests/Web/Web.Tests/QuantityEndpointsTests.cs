@@ -21,7 +21,7 @@ public sealed class QuantityEndpointsTests(ApiFixture fixture) : IClassFixture<A
 
     private static StringContent NoBody => new("{}", Encoding.UTF8, "application/json");
 
-    internal sealed record CompositionChangedResponse(TripDetailsResponse Trip, int ChangedTotals);
+    internal sealed record PlanChangedResponse(TripDetailsResponse Trip, int ChangedTotals);
 
     /// <summary>Family A is two adults and three children in every test of this class.</summary>
     public async ValueTask InitializeAsync()
@@ -43,9 +43,10 @@ public sealed class QuantityEndpointsTests(ApiFixture fixture) : IClassFixture<A
         return categoryId;
     }
 
-    private async Task<TripDetailsResponse> TripWithAsync(Guid categoryId)
+    private async Task<TripDetailsResponse> TripWithAsync(Guid categoryId, DateOnly? start = null, DateOnly? end = null)
     {
-        HttpResponseMessage created = await memberA.PostAsJsonAsync("/api/trips", new { Name = $"Uitje {Guid.NewGuid():N}" }, CancellationToken);
+        HttpResponseMessage created = await memberA.PostAsJsonAsync(
+            "/api/trips", new { Name = $"Uitje {Guid.NewGuid():N}", StartDate = start, EndDate = end }, CancellationToken);
         Guid tripId = (await created.Content.ReadFromJsonAsync<IdOnly>(CancellationToken))!.Id;
         HttpResponseMessage selected = await memberA.PostAsJsonAsync($"/api/trips/{tripId}/categories", new { CategoryIds = new[] { categoryId } }, CancellationToken);
 
@@ -101,10 +102,10 @@ public sealed class QuantityEndpointsTests(ApiFixture fixture) : IClassFixture<A
         Guid shoes = trip.Items.Single(item => item.Name == "Schoenen").Id;
         await memberA.PostAsync($"/api/trips/{trip.Id}/items/{shoes}/advance", NoBody, CancellationToken);
 
-        HttpResponseMessage response = await memberA.PutAsJsonAsync($"/api/trips/{trip.Id}/composition", new { Adults = 2, Children = 2 }, CancellationToken);
+        HttpResponseMessage response = await memberA.PutAsJsonAsync($"/api/trips/{trip.Id}/plan", new { Adults = 2, Children = 2 }, CancellationToken);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        CompositionChangedResponse changed = (await response.Content.ReadFromJsonAsync<CompositionChangedResponse>(CancellationToken))!;
+        PlanChangedResponse changed = (await response.Content.ReadFromJsonAsync<PlanChangedResponse>(CancellationToken))!;
         changed.ChangedTotals.ShouldBe(1);
         changed.Trip.Children.ShouldBe(2);
         changed.Trip.Items.Single(item => item.Name == "Jassen").Total.ShouldBe(2);
@@ -115,11 +116,91 @@ public sealed class QuantityEndpointsTests(ApiFixture fixture) : IClassFixture<A
     }
 
     [Fact]
+    public async Task A_catalog_item_keeps_its_period()
+    {
+        Guid categoryId = await CategoryAsync(new ItemInput("Sokken", 1, "PerChild", "PerDay"));
+
+        List<ItemResponse> items = (await memberA.GetFromJsonAsync<List<ItemResponse>>($"/api/items?categoryId={categoryId}", CancellationToken))!;
+
+        items.Single().Period.ShouldBe("PerDay");
+    }
+
+    [Fact]
+    public async Task A_two_week_trip_counts_socks_per_child_per_day()
+    {
+        Guid categoryId = await CategoryAsync(new ItemInput("Sokken", 1, "PerChild", "PerDay"));
+
+        TripDetailsResponse trip = await TripWithAsync(categoryId, new DateOnly(2026, 7, 4), new DateOnly(2026, 7, 18));
+
+        trip.Days.ShouldBe(15);
+        trip.Nights.ShouldBe(14);
+        trip.Items.Single().Total.ShouldBe(45);
+        trip.Items.Single().Period.ShouldBe("PerDay");
+    }
+
+    [Fact]
+    public async Task A_longer_trip_recalculates_per_day_items()
+    {
+        Guid categoryId = await CategoryAsync(new ItemInput("Sokken", 1, "PerChild", "PerDay"));
+        TripDetailsResponse trip = await TripWithAsync(categoryId, new DateOnly(2026, 7, 4), new DateOnly(2026, 7, 18));
+
+        HttpResponseMessage response = await memberA.PutAsJsonAsync(
+            $"/api/trips/{trip.Id}/plan",
+            new { Adults = 2, Children = 3, StartDate = new DateOnly(2026, 7, 4), EndDate = new DateOnly(2026, 7, 25) },
+            CancellationToken);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        PlanChangedResponse changed = (await response.Content.ReadFromJsonAsync<PlanChangedResponse>(CancellationToken))!;
+        changed.ChangedTotals.ShouldBe(1);
+        changed.Trip.Days.ShouldBe(22);
+        changed.Trip.Nights.ShouldBe(21);
+        changed.Trip.Items.Single().Total.ShouldBe(66);
+    }
+
+    [Fact]
+    public async Task A_trip_without_dates_counts_per_day_items_once()
+    {
+        TripDetailsResponse trip = await TripWithAsync(await CategoryAsync(new ItemInput("Sokken", 1, "PerChild", "PerDay")));
+
+        trip.Days.ShouldBeNull();
+        trip.Items.Single().Total.ShouldBe(3);
+    }
+
+    [Fact]
+    public async Task An_end_date_before_the_start_date_is_rejected()
+    {
+        TripDetailsResponse trip = await TripWithAsync(await CategoryAsync(new ItemInput("Sokken", 1, "PerChild", "PerDay")));
+
+        HttpResponseMessage response = await memberA.PutAsJsonAsync(
+            $"/api/trips/{trip.Id}/plan",
+            new { Adults = 2, Children = 3, StartDate = new DateOnly(2026, 7, 18), EndDate = new DateOnly(2026, 7, 4) },
+            CancellationToken);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Changing_an_items_quantity_to_per_day_counts_the_days()
+    {
+        Guid categoryId = await CategoryAsync(new ItemInput("Onderbroeken", null, null));
+        TripDetailsResponse trip = await TripWithAsync(categoryId, new DateOnly(2026, 7, 4), new DateOnly(2026, 7, 18));
+
+        HttpResponseMessage response = await memberA.PutAsJsonAsync(
+            $"/api/trips/{trip.Id}/items/{trip.Items.Single().Id}/quantity",
+            new { Quantity = 1, Basis = "PerAdult", Period = "PerDay" },
+            CancellationToken);
+
+        TripItemResponse item = (await response.Content.ReadFromJsonAsync<TripItemResponse>(CancellationToken))!;
+        item.Total.ShouldBe(30);
+        item.Period.ShouldBe("PerDay");
+    }
+
+    [Fact]
     public async Task An_invalid_trip_composition_is_rejected()
     {
         TripDetailsResponse trip = await TripWithAsync(await CategoryAsync(new ItemInput("Jassen", 1, "PerChild")));
 
-        HttpResponseMessage response = await memberA.PutAsJsonAsync($"/api/trips/{trip.Id}/composition", new { Adults = 0, Children = 0 }, CancellationToken);
+        HttpResponseMessage response = await memberA.PutAsJsonAsync($"/api/trips/{trip.Id}/plan", new { Adults = 0, Children = 0 }, CancellationToken);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
@@ -159,7 +240,7 @@ public sealed class QuantityEndpointsTests(ApiFixture fixture) : IClassFixture<A
         TripDetailsResponse trip = await TripWithAsync(await CategoryAsync(new ItemInput("Jassen", 1, "PerChild")));
         Guid jackets = trip.Items.Single().Id;
 
-        HttpResponseMessage composition = await memberB.PutAsJsonAsync($"/api/trips/{trip.Id}/composition", new { Adults = 1, Children = 1 }, CancellationToken);
+        HttpResponseMessage composition = await memberB.PutAsJsonAsync($"/api/trips/{trip.Id}/plan", new { Adults = 1, Children = 1 }, CancellationToken);
         HttpResponseMessage quantity = await memberB.PutAsJsonAsync(
             $"/api/trips/{trip.Id}/items/{jackets}/quantity", new { Quantity = 9 }, CancellationToken);
 
@@ -169,7 +250,7 @@ public sealed class QuantityEndpointsTests(ApiFixture fixture) : IClassFixture<A
 }
 
 /// <summary>An item to add to a test category; <see cref="WithCategory"/> turns it into the request body.</summary>
-internal sealed record ItemInput(string Name, int? Quantity, string? Basis)
+internal sealed record ItemInput(string Name, int? Quantity, string? Basis, string? Period = null)
 {
-    public object WithCategory(Guid categoryId) => new { CategoryId = categoryId, Name, Quantity, Unit = (string?)null, Basis };
+    public object WithCategory(Guid categoryId) => new { CategoryId = categoryId, Name, Quantity, Unit = (string?)null, Basis, Period };
 }

@@ -17,6 +17,24 @@ public sealed record TripDates
 
     public DateOnly? End { get; }
 
+    /// <summary>Every calendar day from start to end, both included; <c>null</c> until both dates are known.</summary>
+    public int? Days => Start is { } start && End is { } end ? end.DayNumber - start.DayNumber + 1 : null;
+
+    /// <summary>One night fewer than days, so a day trip has none; <c>null</c> until both dates are known.</summary>
+    public int? Nights => Days - 1;
+
+    /// <summary>
+    /// How many times a quantity with this period is needed. Without dates a per-day or per-night rule counts once, so the
+    /// total is still a sensible minimum; the client shows that the dates are missing.
+    /// </summary>
+    public int Multiplier(QuantityPeriod period) => period switch
+    {
+        QuantityPeriod.PerTrip => 1,
+        QuantityPeriod.PerDay => Days ?? 1,
+        QuantityPeriod.PerNight => Nights ?? 1,
+        _ => throw new ArgumentOutOfRangeException(nameof(period), period, null),
+    };
+
     public static TripDates Create(DateOnly? start, DateOnly? end)
     {
         if (start is not null && end is not null && end < start)

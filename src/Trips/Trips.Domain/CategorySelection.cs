@@ -6,7 +6,8 @@ public sealed record CatalogItemSnapshot(
     string Name,
     int? Quantity,
     string? Unit,
-    QuantityBasis Basis = QuantityBasis.Fixed);
+    QuantityBasis Basis = QuantityBasis.Fixed,
+    QuantityPeriod Period = QuantityPeriod.PerTrip);
 
 /// <summary>A category the user picked for a trip, together with the items to copy from it.</summary>
 public sealed record CategorySelection(Guid CategoryId, string Name, IReadOnlyList<CatalogItemSnapshot> Items);

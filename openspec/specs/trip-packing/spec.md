@@ -37,7 +37,7 @@ The system SHALL allow a family member to create a trip for their family with a 
 
 ### Requirement: Select categories to generate the trip list
 
-The system SHALL let a member select one or more categories available to the family for a trip: its non-removed own categories and the non-removed general categories it has switched on. On selection, the system SHALL create one trip item for every non-removed catalog item in each selected category, copying the item name, category name and quantity rule at that moment, and calculating the item's total from the trip's composition. Every generated trip item SHALL start as `Active`. Adding a category later SHALL add only trip items that do not yet exist for that trip.
+The system SHALL let a member select one or more categories available to the family for a trip: its non-removed own categories and the non-removed general categories it has switched on. On selection, the system SHALL create one trip item for every non-removed catalog item in each selected category, copying the item name, category name and quantity rule at that moment, and calculating the item's total from the trip's composition and duration. Every generated trip item SHALL start as `Active`. Adding a category later SHALL add only trip items that do not yet exist for that trip.
 
 #### Scenario: Generating the list from selected categories
 
@@ -88,6 +88,11 @@ The system SHALL let a member select one or more categories available to the fam
 
 - **WHEN** a catalog item "Haringen" with the fixed quantity 20 is added to a trip
 - **THEN** the trip item "Haringen" has a total of 20, whatever the trip's composition
+
+#### Scenario: Total per child per day
+
+- **WHEN** "Sokken" with the rule 1 per child per day is added to a trip from 2026-07-04 to 2026-07-18 with 3 children
+- **THEN** the trip item "Sokken" has a total of 45
 
 ### Requirement: Select all categories for a trip at once
 
@@ -260,9 +265,28 @@ Activating a category heading SHALL collapse or expand that category's items. Ca
 - **WHEN** "Afwas" is collapsed and the member searches for "spons"
 - **THEN** "Sponsje + borstel" is shown under the heading "Afwas", and after clearing the search "Afwas" is collapsed again
 
-### Requirement: Change a trip's composition
+### Requirement: Trip duration counts days and nights
 
-A member SHALL be able to change the number of adults and children of a trip of their family, within the same limits as a family composition. The change SHALL recalculate the total of every `Active` trip item whose rule is per person, per adult or per child. Trip items in any other status, and items with a fixed quantity, SHALL keep their total. The family's composition SHALL stay unchanged.
+A trip with both a start and an end date SHALL count every calendar day from start to end inclusive as a day, and one night fewer than its days. A per-day or per-night rule SHALL multiply by those days or nights. A trip without both dates SHALL count a per-day or per-night rule once.
+
+#### Scenario: Two weeks in France
+
+- **WHEN** a trip runs from 2026-07-04 to 2026-07-18
+- **THEN** it has 15 days and 14 nights
+
+#### Scenario: Day trip
+
+- **WHEN** a trip starts and ends on 2026-08-01
+- **THEN** it has 1 day and 0 nights, and a per-night item totals 0
+
+#### Scenario: No dates yet
+
+- **WHEN** a trip without dates and with 2 adults contains "Onderbroeken" with the rule 1 per adult per day
+- **THEN** "Onderbroeken" has a total of 2
+
+### Requirement: Change who and when for a trip
+
+A member SHALL be able to change the number of adults and children and the start and end date of a trip of their family in one step, within the limits of a family composition and the date rules for creating a trip. The change SHALL recalculate the total of every `Active` trip item whose rule depends on the composition or the duration. Items in any other status, and items with a fixed quantity per trip, SHALL keep their total. The family's composition SHALL stay unchanged.
 
 #### Scenario: One child stays home
 
@@ -279,9 +303,24 @@ A member SHALL be able to change the number of adults and children of a trip of 
 - **WHEN** a member sets a trip to 0 adults and 0 children
 - **THEN** the request is rejected with a validation error and no total changes
 
+#### Scenario: A longer trip
+
+- **WHEN** a member moves the end date of a 15-day trip with 3 children one week later, while "Sokken" (1 per child per day) is `Active`
+- **THEN** "Sokken" shows a total of 66
+
+#### Scenario: Dates added to a trip without dates
+
+- **WHEN** a member gives the trip "Day at the beach" the dates 2026-08-01 to 2026-08-03
+- **THEN** the trip has 3 days and 2 nights, and the per-day and per-night totals of its `Active` items follow from that
+
+#### Scenario: End date before start date is rejected
+
+- **WHEN** a member sets an end date before the start date
+- **THEN** the request is rejected with a validation error and no total changes
+
 ### Requirement: Change a trip item's quantity while it is to do
 
-A member SHALL be able to change the quantity rule of a single trip item (quantity, basis and unit) or remove it, under the same rules as a catalog item. The total SHALL then be calculated from the trip's composition, and later composition changes SHALL use the new rule. The change SHALL only be allowed while the item is `Active`. The catalog item SHALL stay unchanged.
+A member SHALL be able to change the quantity rule of a single trip item (quantity, basis, period and unit) or remove it, under the same rules as a catalog item. The total SHALL then be calculated from the trip's composition and duration, and later changes of who and when SHALL use the new rule. The change SHALL only be allowed while the item is `Active`. The catalog item SHALL stay unchanged.
 
 #### Scenario: Two extra jackets
 
@@ -303,9 +342,14 @@ A member SHALL be able to change the quantity rule of a single trip item (quanti
 - **WHEN** a member removes the quantity of the `Active` trip item "Paraplu"
 - **THEN** "Paraplu" is shown without an amount
 
+#### Scenario: Switching to per day
+
+- **WHEN** a member changes the `Active` trip item "Onderbroeken" to 1 per adult per day on a trip of 15 days with 2 adults
+- **THEN** "Onderbroeken" shows a total of 30
+
 ### Requirement: Trip items show their total and rule
 
-Wherever a trip item with a quantity is shown, the system SHALL show its total prominently, with the unit when present. For a rule per person, per adult or per child, it SHALL also show the rule (for example "1 per kind"), marked with a colour that differs per basis. Items with a fixed quantity SHALL show only the total.
+Wherever a trip item with a quantity is shown, the system SHALL show its total prominently, with the unit when present. For a rule per person, per adult or per child, it SHALL also show the rule (for example "1 per kind"), marked with a colour that differs per basis. A rule per day or per night SHALL show its period in the rule (for example "1 per kind per dag" or "2 per nacht"), and on a trip without dates it SHALL also show that the dates are missing. Items with a fixed quantity per trip SHALL show only the total.
 
 #### Scenario: Jackets per child in the walkthrough
 
@@ -321,6 +365,16 @@ Wherever a trip item with a quantity is shown, the system SHALL show its total p
 
 - **WHEN** a trip item "Haringen" has the fixed quantity 20
 - **THEN** it shows "20" without a rule
+
+#### Scenario: Rule with a period
+
+- **WHEN** a trip of 15 days with 3 children contains "Sokken" with the rule 1 per child per day
+- **THEN** "Sokken" shows the total 45 and the rule "1 per kind per dag"
+
+#### Scenario: Trip without dates
+
+- **WHEN** a trip without dates and with 3 children contains "Sokken" with the rule 1 per child per day
+- **THEN** "Sokken" shows the total 3, the rule "1 per kind per dag" and a hint that the trip has no dates yet
 
 ### Requirement: Trip progress
 

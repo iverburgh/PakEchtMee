@@ -2,7 +2,7 @@ using Catalog.Domain.Items;
 
 namespace Catalog.Application.Contracts;
 
-public sealed record CatalogItemDto(Guid Id, Guid CategoryId, string Name, int? Quantity, string? Unit, string Basis, bool IsDeleted)
+public sealed record CatalogItemDto(Guid Id, Guid CategoryId, string Name, int? Quantity, string? Unit, string Basis, string Period, bool IsDeleted)
 {
     public static CatalogItemDto From(CatalogItem item)
     {
@@ -15,6 +15,7 @@ public sealed record CatalogItemDto(Guid Id, Guid CategoryId, string Name, int? 
             item.Amount?.Quantity,
             item.Amount?.Unit,
             (item.Amount?.Basis ?? QuantityBasis.Fixed).ToString(),
+            (item.Amount?.Period ?? QuantityPeriod.PerTrip).ToString(),
             item.IsDeleted);
     }
 }

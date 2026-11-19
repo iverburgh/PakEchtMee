@@ -120,6 +120,12 @@ namespace Catalog.Infrastructure.Sql.Migrations
                                 .HasColumnType("nvarchar(20)")
                                 .HasColumnName("QuantityBasis");
 
+                            b1.Property<string>("Period")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)")
+                                .HasColumnName("QuantityPeriod");
+
                             b1.Property<int>("Quantity")
                                 .HasColumnType("int")
                                 .HasColumnName("Quantity");

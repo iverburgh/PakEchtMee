@@ -68,6 +68,27 @@ public sealed class CatalogSeedDataTests
         item.Basis.ShouldBe(basis);
     }
 
+    [Theory]
+    [InlineData(CatalogSeedData.Kleding, "Onderbroeken", QuantityBasis.PerAdult)]
+    [InlineData(CatalogSeedData.Kleding, "Sokken", QuantityBasis.PerAdult)]
+    [InlineData(CatalogSeedData.KinderenKleding, "Sokken", QuantityBasis.PerChild)]
+    public void Underwear_and_socks_are_one_per_head_per_day(string category, string name, QuantityBasis basis)
+    {
+        SeedItem item = CategoryNamed(category).Items.Single(item => item.Name == name);
+
+        item.Quantity.ShouldBe(1);
+        item.Basis.ShouldBe(basis);
+        item.Period.ShouldBe(QuantityPeriod.PerDay);
+    }
+
+    [Fact]
+    public void Everything_else_is_needed_once_per_trip()
+    {
+        CategoryNamed(CatalogSeedData.KinderenKleding).Items.Single(item => item.Name == "Truien").Quantity.ShouldBeNull();
+        CatalogSeedData.PerHead.Count(entry => entry.Value.Period == QuantityPeriod.PerDay).ShouldBe(3);
+        CategoryNamed(CatalogSeedData.KinderenSlapen).Items.Single(item => item.Name == "Slaapzak").Period.ShouldBe(QuantityPeriod.PerTrip);
+    }
+
     [Fact]
     public void Every_per_head_entry_names_an_existing_seed_item()
         => CatalogSeedData.PerHead.Keys.ShouldAllBe(key => CategoryNamed(key.Category).Items.Any(item => item.Name == key.Item));

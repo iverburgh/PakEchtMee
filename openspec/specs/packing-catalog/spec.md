@@ -76,7 +76,7 @@ The system SHALL allow a user to create, rename, move and remove catalog items i
 
 ### Requirement: Optional quantity and unit on a catalog item
 
-The system SHALL allow a catalog item to optionally carry a quantity rule: a quantity, a basis and a unit. When present, the quantity SHALL be an integer of at least 1 and at most 9999. The basis SHALL be one of fixed, per person, per adult or per child, and SHALL default to fixed. A unit SHALL be at most 20 characters and SHALL only be accepted when a quantity is present. An item without a quantity SHALL be treated as a plain item with no amount shown.
+The system SHALL allow a catalog item to optionally carry a quantity rule: a quantity, a basis, a period and a unit. When present, the quantity SHALL be an integer of at least 1 and at most 9999. The basis SHALL be one of fixed, per person, per adult or per child, and SHALL default to fixed. The period SHALL be one of per trip, per day or per night, and SHALL default to per trip. A unit SHALL be at most 20 characters and SHALL only be accepted when a quantity is present. An item without a quantity SHALL be treated as a plain item with no amount shown.
 
 #### Scenario: Item with quantity and unit
 
@@ -116,6 +116,21 @@ The system SHALL allow a catalog item to optionally carry a quantity rule: a qua
 #### Scenario: Basis without quantity is rejected
 
 - **WHEN** a user submits an item with basis per adult and no quantity
+- **THEN** the system rejects the request with a validation error
+
+#### Scenario: Quantity per child per day
+
+- **WHEN** a user adds "Sokken" with quantity 1, basis per child and period per day
+- **THEN** the catalog shows "Sokken" with the rule "1 per kind per dag"
+
+#### Scenario: Fixed quantity per night
+
+- **WHEN** a user adds "Theezakjes" with quantity 2, basis fixed and period per night
+- **THEN** the catalog shows "Theezakjes" with the rule "2 per nacht"
+
+#### Scenario: Period without quantity is rejected
+
+- **WHEN** a user submits an item with period per day and no quantity
 - **THEN** the system rejects the request with a validation error
 
 ### Requirement: Catalog data is private to its family

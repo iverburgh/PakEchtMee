@@ -8,7 +8,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import type { ActionResult } from "@/lib/actions";
 import { callAction } from "@/lib/call-action";
-import type { CatalogItem, QuantityBasis } from "@/lib/types";
+import type { CatalogItem, QuantityBasis, QuantityPeriod } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,13 @@ const schema = refineQuantity(
 
 type FormValues = z.infer<typeof schema>;
 
-export type ItemInput = { name: string; quantity: number | null; unit: string | null; basis: QuantityBasis };
+export type ItemInput = {
+  name: string;
+  quantity: number | null;
+  unit: string | null;
+  basis: QuantityBasis;
+  period: QuantityPeriod;
+};
 
 export function ItemDialog({
   open,
@@ -92,8 +98,8 @@ export function ItemDialog({
             </Field>
             <QuantityFields idPrefix="item" />
             <p className="text-muted-foreground text-xs">
-              Aantal en eenheid zijn optioneel. Kies &ldquo;Per kind&rdquo; of &ldquo;Per persoon&rdquo; om het aantal bij een uitje
-              uit te rekenen.
+              Aantal en eenheid zijn optioneel. Met &ldquo;Telt voor&rdquo; en &ldquo;Hoe vaak&rdquo; rekent een uitje het aantal uit,
+              bijvoorbeeld 1 per kind per dag.
             </p>
             <DialogFooter>
               <Button type="submit" disabled={pending} className="min-h-11 w-full">

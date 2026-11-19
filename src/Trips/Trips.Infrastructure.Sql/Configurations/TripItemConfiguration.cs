@@ -27,6 +27,7 @@ internal sealed class TripItemConfiguration : IEntityTypeConfiguration<TripItem>
 
             // Nullable because an item without an amount has none.
             amount.Property(value => value.Basis).HasColumnName("QuantityBasis").HasConversion<string>().HasMaxLength(20);
+            amount.Property(value => value.Period).HasColumnName("QuantityPeriod").HasConversion<string>().HasMaxLength(20);
         });
 
         builder.Property(item => item.Total);

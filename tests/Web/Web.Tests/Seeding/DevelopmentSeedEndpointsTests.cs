@@ -50,6 +50,12 @@ public sealed class DevelopmentSeedEndpointsTests(DevelopmentApiFixture fixture)
         sleepingBag.Total.ShouldBe(3);
         trip.Items.Single(item => item.Name == "Borden").Total.ShouldBe(5);
         trip.Items.Single(item => item.Name == "Jas").Total.ShouldBe(2);
+
+        // The camping trip has no dates, so per-day socks count once, for each of the three children.
+        trip.Days.ShouldBeNull();
+        TripItemResponse childSocks = trip.Items.Single(item => item.Name == "Sokken" && item.CategoryName == "Kinderen – Kleding");
+        childSocks.Period.ShouldBe("PerDay");
+        childSocks.Total.ShouldBe(3);
     }
 
     [Fact]

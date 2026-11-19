@@ -61,7 +61,27 @@ export const basisTone: Record<Exclude<QuantityBasis, "Fixed">, string> = {
   PerChild: "bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200",
 };
 
+/** How often a quantity is needed during a trip: once, or for every day or night of it. */
+export type QuantityPeriod = "PerTrip" | "PerDay" | "PerNight";
+
+export const quantityPeriods: QuantityPeriod[] = ["PerTrip", "PerDay", "PerNight"];
+
+export const periodLabels: Record<QuantityPeriod, string> = {
+  PerTrip: "Per uitje",
+  PerDay: "Per dag",
+  PerNight: "Per nacht",
+};
+
+const periodSuffixes: Record<QuantityPeriod, string> = {
+  PerTrip: "",
+  PerDay: "per dag",
+  PerNight: "per nacht",
+};
+
 export type Composition = { adults: number; children: number };
+
+/** Who comes along and when; dates are ISO dates ("2026-07-04") or null. */
+export type TripPlan = Composition & { startDate: string | null; endDate: string | null };
 
 export type CatalogItem = {
   id: string;
@@ -70,6 +90,7 @@ export type CatalogItem = {
   quantity: number | null;
   unit: string | null;
   basis: QuantityBasis;
+  period: QuantityPeriod;
   isDeleted: boolean;
 };
 
@@ -104,7 +125,8 @@ export type TripItem = {
   quantity: number | null;
   unit: string | null;
   basis: QuantityBasis;
-  /** How many to pack on this trip: the quantity times the heads its basis counts. Null without a quantity. */
+  period: QuantityPeriod;
+  /** How many to pack on this trip: the quantity times the heads and the days or nights it counts. Null without a quantity. */
   total: number | null;
   status: PackingStatus;
   nextStatus: PackingStatus | null;
@@ -119,6 +141,9 @@ export type TripDetails = {
   endDate: string | null;
   adults: number;
   children: number;
+  /** Calendar days from start to end, both included; null until the trip has both dates. */
+  days: number | null;
+  nights: number | null;
   categories: TripCategory[];
   items: TripItem[];
   progress: TripProgress;
@@ -133,11 +158,34 @@ export function describeAmount(quantity: number | null, unit: string | null): st
   return unit === null ? `${quantity}` : `${quantity} ${unit}`;
 }
 
-/** Renders the rule: "20", "1 per kind" or "2 liter per persoon"; "" without a quantity. */
-export function describeRule(quantity: number | null, unit: string | null, basis: QuantityBasis): string {
+/** Renders the rule: "20", "1 per kind", "2 per nacht" or "2 liter per persoon per dag"; "" without a quantity. */
+export function describeRule(
+  quantity: number | null,
+  unit: string | null,
+  basis: QuantityBasis,
+  period: QuantityPeriod = "PerTrip",
+): string {
   const amount = describeAmount(quantity, unit);
 
-  return amount === "" || basis === "Fixed" ? amount : `${amount} ${basisSuffixes[basis]}`;
+  if (amount === "") {
+    return "";
+  }
+
+  return [amount, basisSuffixes[basis], periodSuffixes[period]].filter((part) => part !== "").join(" ");
+}
+
+/** True when the rule says more than its number: a per-head basis or a period. */
+export function isRule(basis: QuantityBasis, period: QuantityPeriod): boolean {
+  return basis !== "Fixed" || period !== "PerTrip";
+}
+
+/** Renders "15 dagen · 14 nachten", with singular forms; "" for a trip without dates. */
+export function describeDuration(days: number | null, nights: number | null): string {
+  if (days === null || nights === null) {
+    return "";
+  }
+
+  return `${days} ${days === 1 ? "dag" : "dagen"} · ${nights} ${nights === 1 ? "nacht" : "nachten"}`;
 }
 
 /** Renders "2 volwassenen · 3 kinderen", with singular forms and without a group of zero. */

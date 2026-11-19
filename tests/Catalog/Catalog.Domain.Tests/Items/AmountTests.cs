@@ -90,4 +90,46 @@ public sealed class AmountTests
     [InlineData("7")]
     public void Rejects_an_unknown_api_value(string value)
         => Should.Throw<DomainValidationException>(() => QuantityBases.Parse(value));
+
+    [Fact]
+    public void The_period_defaults_to_once_per_trip()
+        => Amount.Create(2, null)!.Period.ShouldBe(QuantityPeriod.PerTrip);
+
+    [Fact]
+    public void Renders_a_quantity_per_child_per_day()
+        => Amount.Create(1, null, QuantityBasis.PerChild, QuantityPeriod.PerDay)!.ToString().ShouldBe("1 per kind per dag");
+
+    [Fact]
+    public void Renders_a_fixed_quantity_per_night()
+        => Amount.Create(2, null, QuantityBasis.Fixed, QuantityPeriod.PerNight)!.ToString().ShouldBe("2 per nacht");
+
+    [Fact]
+    public void Renders_a_quantity_with_a_unit_per_person_per_day()
+        => Amount.Create(2, "liter", QuantityBasis.PerPerson, QuantityPeriod.PerDay)!.ToString().ShouldBe("2 liter per persoon per dag");
+
+    [Fact]
+    public void A_period_without_a_quantity_is_rejected()
+        => Should.Throw<DomainValidationException>(() => Amount.Create(null, null, QuantityBasis.Fixed, QuantityPeriod.PerDay));
+
+    [Fact]
+    public void An_undefined_period_is_rejected()
+        => Should.Throw<DomainValidationException>(() => Amount.Create(1, null, QuantityBasis.Fixed, (QuantityPeriod)42));
+
+    [Fact]
+    public void Amounts_with_another_period_differ()
+        => Amount.Create(1, null, QuantityBasis.PerChild, QuantityPeriod.PerDay).ShouldNotBe(Amount.Create(1, null, QuantityBasis.PerChild));
+
+    [Theory]
+    [InlineData(null, QuantityPeriod.PerTrip)]
+    [InlineData("", QuantityPeriod.PerTrip)]
+    [InlineData("PerDay", QuantityPeriod.PerDay)]
+    [InlineData(" pernight ", QuantityPeriod.PerNight)]
+    public void Parses_the_api_period(string? value, QuantityPeriod expected)
+        => QuantityPeriods.Parse(value).ShouldBe(expected);
+
+    [Theory]
+    [InlineData("PerWeek")]
+    [InlineData("5")]
+    public void Rejects_an_unknown_api_period(string value)
+        => Should.Throw<DomainValidationException>(() => QuantityPeriods.Parse(value));
 }

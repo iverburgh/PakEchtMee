@@ -54,6 +54,27 @@ public sealed class CatalogItemRepositoryTests(CatalogDatabaseFixture fixture) :
     }
 
     [Fact]
+    public async Task An_item_keeps_its_period_across_a_round_trip()
+    {
+        Category category = await GivenCategoryAsync();
+        CatalogItem created;
+
+        await using (CatalogDbContext context = fixture.CreateContext())
+        {
+            CatalogItemRepository repository = new(context);
+            created = CatalogItem.Create(category, ItemName.Create("Sokken"), Amount.Create(1, null, QuantityBasis.PerChild, QuantityPeriod.PerDay));
+            repository.Add(created);
+            await repository.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await using CatalogDbContext verify = fixture.CreateContext();
+        CatalogItem? found = await new CatalogItemRepository(verify).FindAsync(created.Id, TestContext.Current.CancellationToken);
+
+        found.ShouldNotBeNull();
+        found.Amount.ShouldBe(Amount.Create(1, null, QuantityBasis.PerChild, QuantityPeriod.PerDay));
+    }
+
+    [Fact]
     public async Task An_item_without_an_amount_round_trips_without_one()
     {
         Category category = await GivenCategoryAsync();

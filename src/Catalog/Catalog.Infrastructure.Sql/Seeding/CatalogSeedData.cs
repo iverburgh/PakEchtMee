@@ -2,7 +2,15 @@ using Catalog.Domain.Items;
 
 namespace Catalog.Infrastructure.Sql.Seeding;
 
-public sealed record SeedItem(Guid Id, string Name, int? Quantity, QuantityBasis Basis = QuantityBasis.Fixed);
+public sealed record SeedItem(
+    Guid Id,
+    string Name,
+    int? Quantity,
+    QuantityBasis Basis = QuantityBasis.Fixed,
+    QuantityPeriod Period = QuantityPeriod.PerTrip);
+
+/// <summary>How a seeded item is counted on a trip: per head, and once or per day or night.</summary>
+public sealed record SeedRule(QuantityBasis Basis, QuantityPeriod Period = QuantityPeriod.PerTrip);
 
 public sealed record SeedCategory(Guid Id, string Name, IReadOnlyList<SeedItem> Items);
 
@@ -40,38 +48,42 @@ public static class CatalogSeedData
         [Tent, SlapenInTent, Kampeerkeuken, Afwas, KamperenAlgemeen, Was];
 
     /// <summary>
-    /// Items packed once for every child, adult or person on a trip. The sheet's "3x" entries were three children, so
-    /// they are per child here. Declared before <see cref="Categories"/>, which reads it while it is initialised.
+    /// Items packed for every child, adult or person on a trip, once or for every day. The sheet's "3x" entries were
+    /// three children, so they are per child here; underwear and socks are needed every day. Declared before
+    /// <see cref="Categories"/>, which reads it while it is initialised.
     /// </summary>
-    public static readonly IReadOnlyDictionary<(string Category, string Item), QuantityBasis> PerHead =
-        new Dictionary<(string Category, string Item), QuantityBasis>
+    public static readonly IReadOnlyDictionary<(string Category, string Item), SeedRule> PerHead =
+        new Dictionary<(string Category, string Item), SeedRule>
         {
-            [(KinderenSlapen, "Slaapzak")] = QuantityBasis.PerChild,
-            [(KinderenSlapen, "Matje")] = QuantityBasis.PerChild,
-            [(KinderenSlapen, "Kussen")] = QuantityBasis.PerChild,
-            [(KinderenToiletartikelen, "Handdoek(en) douchen")] = QuantityBasis.PerChild,
-            [(KinderenBuitenkleding, "Jassen")] = QuantityBasis.PerChild,
-            [(KinderenBuitenkleding, "Laarzen")] = QuantityBasis.PerChild,
-            [(KinderenBuitenkleding, "Schoenen")] = QuantityBasis.PerChild,
-            [(KinderenBuitenkleding, "Crocs/sandalen/slippers")] = QuantityBasis.PerChild,
-            [(KinderenBuitenkleding, "Petten")] = QuantityBasis.PerChild,
-            [(KinderenBuitenkleding, "Zonnebrillen")] = QuantityBasis.PerChild,
-            [(KinderenVermaak, "Zwemkleding")] = QuantityBasis.PerChild,
-            [(KinderenVermaak, "Handdoek(en) zwemmen")] = QuantityBasis.PerChild,
-            [(Buitenkleding, "Jas")] = QuantityBasis.PerAdult,
-            [(Buitenkleding, "Slippers/crocs/teva's")] = QuantityBasis.PerAdult,
-            [(Buitenkleding, "Pet")] = QuantityBasis.PerAdult,
-            [(Buitenkleding, "Zonnebrillen")] = QuantityBasis.PerAdult,
-            [(Buitenkleding, "Wandelschoenen")] = QuantityBasis.PerAdult,
-            [(Toiletartikelen, "Handdoeken douchen")] = QuantityBasis.PerAdult,
-            [(SlapenInTent, "Matjes")] = QuantityBasis.PerAdult,
-            [(SlapenInTent, "Kussens")] = QuantityBasis.PerAdult,
-            [(Vermaak, "Badhanddoeken")] = QuantityBasis.PerPerson,
-            [(Algemeen, "Geldige paspoorten")] = QuantityBasis.PerPerson,
-            [(Kampeerkeuken, "Borden")] = QuantityBasis.PerPerson,
-            [(Kampeerkeuken, "Bekers")] = QuantityBasis.PerPerson,
-            [(Kampeerkeuken, "Bestek")] = QuantityBasis.PerPerson,
-            [(KamperenAlgemeen, "Stoelen")] = QuantityBasis.PerPerson,
+            [(KinderenSlapen, "Slaapzak")] = new(QuantityBasis.PerChild),
+            [(KinderenSlapen, "Matje")] = new(QuantityBasis.PerChild),
+            [(KinderenSlapen, "Kussen")] = new(QuantityBasis.PerChild),
+            [(KinderenToiletartikelen, "Handdoek(en) douchen")] = new(QuantityBasis.PerChild),
+            [(KinderenBuitenkleding, "Jassen")] = new(QuantityBasis.PerChild),
+            [(KinderenBuitenkleding, "Laarzen")] = new(QuantityBasis.PerChild),
+            [(KinderenBuitenkleding, "Schoenen")] = new(QuantityBasis.PerChild),
+            [(KinderenBuitenkleding, "Crocs/sandalen/slippers")] = new(QuantityBasis.PerChild),
+            [(KinderenBuitenkleding, "Petten")] = new(QuantityBasis.PerChild),
+            [(KinderenBuitenkleding, "Zonnebrillen")] = new(QuantityBasis.PerChild),
+            [(KinderenVermaak, "Zwemkleding")] = new(QuantityBasis.PerChild),
+            [(KinderenVermaak, "Handdoek(en) zwemmen")] = new(QuantityBasis.PerChild),
+            [(Buitenkleding, "Jas")] = new(QuantityBasis.PerAdult),
+            [(Buitenkleding, "Slippers/crocs/teva's")] = new(QuantityBasis.PerAdult),
+            [(Buitenkleding, "Pet")] = new(QuantityBasis.PerAdult),
+            [(Buitenkleding, "Zonnebrillen")] = new(QuantityBasis.PerAdult),
+            [(Buitenkleding, "Wandelschoenen")] = new(QuantityBasis.PerAdult),
+            [(Toiletartikelen, "Handdoeken douchen")] = new(QuantityBasis.PerAdult),
+            [(SlapenInTent, "Matjes")] = new(QuantityBasis.PerAdult),
+            [(SlapenInTent, "Kussens")] = new(QuantityBasis.PerAdult),
+            [(Vermaak, "Badhanddoeken")] = new(QuantityBasis.PerPerson),
+            [(Algemeen, "Geldige paspoorten")] = new(QuantityBasis.PerPerson),
+            [(Kampeerkeuken, "Borden")] = new(QuantityBasis.PerPerson),
+            [(Kampeerkeuken, "Bekers")] = new(QuantityBasis.PerPerson),
+            [(Kampeerkeuken, "Bestek")] = new(QuantityBasis.PerPerson),
+            [(KamperenAlgemeen, "Stoelen")] = new(QuantityBasis.PerPerson),
+            [(Kleding, "Onderbroeken")] = new(QuantityBasis.PerAdult, QuantityPeriod.PerDay),
+            [(Kleding, "Sokken")] = new(QuantityBasis.PerAdult, QuantityPeriod.PerDay),
+            [(KinderenKleding, "Sokken")] = new(QuantityBasis.PerChild, QuantityPeriod.PerDay),
         };
 
     public static readonly IReadOnlyList<SeedCategory> Categories =
@@ -127,7 +139,7 @@ public static class CatalogSeedData
     private static SeedCategory Category(string name, IReadOnlyList<SeedItem> items) => new(CategoryId(name), name, items);
 
     private static SeedItem Item(string categoryName, string name)
-        => PerHead.TryGetValue((categoryName, name), out QuantityBasis basis)
-            ? new SeedItem(ItemId(categoryName, name), name, 1, basis)
+        => PerHead.TryGetValue((categoryName, name), out SeedRule? rule)
+            ? new SeedItem(ItemId(categoryName, name), name, 1, rule.Basis, rule.Period)
             : new SeedItem(ItemId(categoryName, name), name, null);
 }

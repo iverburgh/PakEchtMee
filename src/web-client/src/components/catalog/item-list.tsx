@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { FolderInput, MoreVertical, PackageOpen, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { CatalogItem, Category } from "@/lib/types";
-import { describeAmount } from "@/lib/types";
+import { describeAmount, isRule } from "@/lib/types";
 import { RuleChip } from "@/components/quantity-badge";
 import {
   createItemAction,
@@ -90,7 +90,7 @@ export function ItemList({
       <ul className="flex flex-col gap-2">
         {live.map((item) => {
           // A fixed amount reads best as plain text; a per-head rule gets its coloured chip.
-          const amount = item.basis === "Fixed" ? describeAmount(item.quantity, item.unit) : "";
+          const amount = isRule(item.basis, item.period) ? "" : describeAmount(item.quantity, item.unit);
 
           return (
             <li key={item.id}>
@@ -100,7 +100,7 @@ export function ItemList({
                     {item.name}
                     {amount ? <span className="text-muted-foreground"> {amount}</span> : null}
                   </span>
-                  <RuleChip quantity={item.quantity} unit={item.unit} basis={item.basis} />
+                  <RuleChip quantity={item.quantity} unit={item.unit} basis={item.basis} period={item.period} />
                 </span>
                 {readOnly ? null : (
                 <DropdownMenu>

@@ -184,6 +184,7 @@ public sealed class TripEndpointsTests(ApiFixture fixture) : IClassFixture<ApiFi
         int? Quantity,
         string? Unit,
         string Basis,
+        string Period,
         int? Total,
         string Status,
         string? NextStatus,
@@ -201,6 +202,8 @@ public sealed class TripEndpointsTests(ApiFixture fixture) : IClassFixture<ApiFi
         DateOnly? EndDate,
         int Adults,
         int Children,
+        int? Days,
+        int? Nights,
         IReadOnlyList<TripCategoryResponse> Categories,
         IReadOnlyList<TripItemResponse> Items,
         ProgressResponse Progress);

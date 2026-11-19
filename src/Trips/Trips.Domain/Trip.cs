@@ -73,7 +73,7 @@ public sealed class Trip
                 TripItem? existing = items.Find(item => item.SourceItemId == snapshot.SourceItemId);
 
                 if (existing is null)
-                    items.Add(TripItem.Create(Id, selection.CategoryId, selection.Name, snapshot, Composition));
+                    items.Add(TripItem.Create(Id, selection.CategoryId, selection.Name, snapshot, Composition, Dates));
                 else if (existing.IsDeleted)
                     existing.Restore();
             }
@@ -124,22 +124,27 @@ public sealed class Trip
         return item;
     }
 
-    /// <summary>Changes who comes along and recalculates the per-head totals of the items that are still to do.</summary>
+    /// <summary>
+    /// Changes who comes along and when, in one step, and recalculates the totals of the items still to do whose rule
+    /// depends on either.
+    /// </summary>
     /// <returns>How many totals changed, so the user can be told what the change did.</returns>
-    public int ChangeComposition(TripComposition composition)
+    public int ChangePlan(TripComposition composition, TripDates dates)
     {
         ArgumentNullException.ThrowIfNull(composition);
+        ArgumentNullException.ThrowIfNull(dates);
 
         Composition = composition;
+        Dates = dates;
 
-        return items.Count(item => item.FollowComposition(composition));
+        return items.Count(item => item.FollowPlan(composition, dates));
     }
 
     /// <summary>Changes one item's quantity rule (or removes it with <c>null</c>); the catalog item is not touched.</summary>
     public TripItem ChangeItemAmount(Guid itemId, Amount? amount)
     {
         TripItem item = RequireItem(itemId);
-        item.ChangeAmount(amount, Composition);
+        item.ChangeAmount(amount, Composition, Dates);
 
         return item;
     }

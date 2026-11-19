@@ -24,6 +24,5 @@ internal static class FamilyEndpoints
         return group;
     }
 
-    /// <summary>Shared by the family and the trip composition endpoints.</summary>
     internal sealed record CompositionRequest(int Adults, int Children);
 }

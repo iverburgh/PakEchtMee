@@ -21,6 +21,8 @@ public sealed record TripDetailsDto(
     DateOnly? EndDate,
     int Adults,
     int Children,
+    int? Days,
+    int? Nights,
     IReadOnlyList<TripCategoryDto> Categories,
     IReadOnlyList<TripItemDto> Items,
     TripProgressDto Progress)
@@ -40,6 +42,8 @@ public sealed record TripDetailsDto(
             trip.Dates.End,
             trip.Composition.Adults,
             trip.Composition.Children,
+            trip.Dates.Days,
+            trip.Dates.Nights,
             [.. trip.Categories.Select(category => new TripCategoryDto(category.CategoryId, category.Name, trip.HasProgressedItemsIn(category.CategoryId)))],
             // The database returns items in no particular order; a stable, readable order makes the list walkable.
             [.. trip.Items
@@ -51,5 +55,5 @@ public sealed record TripDetailsDto(
     }
 }
 
-/// <summary>The trip after a composition change, plus how many totals changed so the user can be told what it did.</summary>
-public sealed record TripCompositionChangedDto(TripDetailsDto Trip, int ChangedTotals);
+/// <summary>The trip after a change of who and when, plus how many totals changed so the user can be told what it did.</summary>
+public sealed record TripPlanChangedDto(TripDetailsDto Trip, int ChangedTotals);

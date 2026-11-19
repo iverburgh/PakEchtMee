@@ -13,7 +13,8 @@ public sealed class TripItem
         string categoryName,
         string name,
         Amount? amount,
-        TripComposition composition)
+        TripComposition composition,
+        TripDates dates)
     {
         Id = id;
         TripId = tripId;
@@ -22,7 +23,7 @@ public sealed class TripItem
         CategoryName = categoryName;
         Name = name;
         Amount = amount;
-        Total = amount?.TotalFor(composition);
+        Total = amount?.TotalFor(composition, dates);
         Status = PackingStatus.Active;
     }
 
@@ -50,8 +51,8 @@ public sealed class TripItem
     public Amount? Amount { get; private set; }
 
     /// <summary>
-    /// How many to pack, calculated from <see cref="Amount"/> and the trip's composition. Stored rather than derived, so an
-    /// item that has progressed keeps the total it was packed with when the composition changes later.
+    /// How many to pack, calculated from <see cref="Amount"/> and the trip's composition and dates. Stored rather than
+    /// derived, so an item that has progressed keeps the total it was packed with when who or when changes later.
     /// </summary>
     public int? Total { get; private set; }
 
@@ -68,10 +69,12 @@ public sealed class TripItem
         Guid sourceCategoryId,
         string categoryName,
         CatalogItemSnapshot snapshot,
-        TripComposition composition)
+        TripComposition composition,
+        TripDates dates)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentNullException.ThrowIfNull(composition);
+        ArgumentNullException.ThrowIfNull(dates);
 
         return new TripItem(
             Guid.CreateVersion7(),
@@ -80,12 +83,13 @@ public sealed class TripItem
             snapshot.SourceItemId,
             Guard.RequiredText(categoryName, 60, "Categorienaam"),
             Guard.RequiredText(snapshot.Name, 100, "Itemnaam"),
-            Amount.Create(snapshot.Quantity, snapshot.Unit, snapshot.Basis),
-            composition);
+            Amount.Create(snapshot.Quantity, snapshot.Unit, snapshot.Basis, snapshot.Period),
+            composition,
+            dates);
     }
 
     /// <summary>Replaces the quantity rule; only while the item is still to do, because a packed total must stay what was packed.</summary>
-    internal void ChangeAmount(Amount? amount, TripComposition composition)
+    internal void ChangeAmount(Amount? amount, TripComposition composition, TripDates dates)
     {
         EnsureNotDeleted();
 
@@ -93,17 +97,20 @@ public sealed class TripItem
             throw new DomainValidationException($"'{Name}' is al opgepakt; het aantal kan alleen bij Te doen worden gewijzigd.");
 
         Amount = amount;
-        Total = amount?.TotalFor(composition);
+        Total = amount?.TotalFor(composition, dates);
     }
 
-    /// <summary>Follows a new trip composition. Only items still to do with a per-head rule change; everything else keeps its total.</summary>
+    /// <summary>
+    /// Follows a new composition and dates. Only items still to do whose rule depends on who or when change; everything
+    /// else keeps its total.
+    /// </summary>
     /// <returns><c>true</c> when the total changed.</returns>
-    internal bool FollowComposition(TripComposition composition)
+    internal bool FollowPlan(TripComposition composition, TripDates dates)
     {
-        if (IsDeleted || Status is not PackingStatus.Active || Amount is null || Amount.Basis is QuantityBasis.Fixed)
+        if (IsDeleted || Status is not PackingStatus.Active || Amount is null || !Amount.DependsOnPlan)
             return false;
 
-        int total = Amount.TotalFor(composition);
+        int total = Amount.TotalFor(composition, dates);
 
         if (total == Total)
             return false;

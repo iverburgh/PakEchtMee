@@ -23,7 +23,7 @@ export function FamilyCompositionCard({ composition }: { composition: Compositio
         idPrefix="family-composition"
         initialValue={composition}
         submitLabel="Opslaan"
-        onSubmit={changeFamilyCompositionAction}
+        onSubmit={({ adults, children }) => changeFamilyCompositionAction({ adults, children })}
         onSaved={() => {
           toast.success("Gezin opgeslagen.");
           router.refresh();

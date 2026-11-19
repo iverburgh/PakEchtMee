@@ -44,6 +44,40 @@ public sealed class TripRepositoryTests(TripsDatabaseFixture fixture) : IClassFi
     }
 
     [Fact]
+    public async Task Periods_and_changed_dates_round_trip()
+    {
+        Guid tripId;
+
+        await using (TripsDbContext context = fixture.CreateContext())
+        {
+            TripRepository repository = new(context);
+            Trip trip = Trip.Create(Family, TripName.Create($"Trip {Guid.NewGuid():N}"), TripDates.Create(null, null), TripComposition.Create(2, 3));
+            CatalogItemSnapshot socks = new(Guid.CreateVersion7(), "Sokken", 1, null, QuantityBasis.PerChild, QuantityPeriod.PerDay);
+            trip.SelectCategories([new CategorySelection(Guid.CreateVersion7(), "Kinderen – Kleding", [socks])]);
+            repository.Add(trip);
+            await repository.SaveChangesAsync(TestContext.Current.CancellationToken);
+            tripId = trip.Id;
+        }
+
+        await using (TripsDbContext context = fixture.CreateContext())
+        {
+            TripRepository repository = new(context);
+            Trip trip = (await repository.FindAsync(tripId, Family, TestContext.Current.CancellationToken))!;
+            trip.ChangePlan(trip.Composition, TripDates.Create(new DateOnly(2026, 7, 4), new DateOnly(2026, 7, 18)));
+            await repository.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await using TripsDbContext verify = fixture.CreateContext();
+        Trip? found = await new TripRepository(verify).FindAsync(tripId, Family, TestContext.Current.CancellationToken);
+
+        found.ShouldNotBeNull();
+        found.Dates.Days.ShouldBe(15);
+        TripItem foundSocks = found.Items.Single();
+        foundSocks.Amount.ShouldBe(Amount.Create(1, null, QuantityBasis.PerChild, QuantityPeriod.PerDay));
+        foundSocks.Total.ShouldBe(45);
+    }
+
+    [Fact]
     public async Task Composition_rules_and_totals_round_trip()
     {
         Guid tripId;
@@ -66,7 +100,7 @@ public sealed class TripRepositoryTests(TripsDatabaseFixture fixture) : IClassFi
         {
             TripRepository repository = new(context);
             Trip trip = (await repository.FindAsync(tripId, Family, TestContext.Current.CancellationToken))!;
-            trip.ChangeComposition(TripComposition.Create(1, 2));
+            trip.ChangePlan(TripComposition.Create(1, 2), trip.Dates);
             await repository.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
