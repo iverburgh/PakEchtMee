@@ -84,7 +84,6 @@ public sealed class CatalogSeedDataTests
     [Fact]
     public void Everything_else_is_needed_once_per_trip()
     {
-        CategoryNamed(CatalogSeedData.KinderenKleding).Items.Single(item => item.Name == "Truien").Quantity.ShouldBeNull();
         CatalogSeedData.PerHead.Count(entry => entry.Value.Period == QuantityPeriod.PerDay).ShouldBe(3);
         CategoryNamed(CatalogSeedData.KinderenSlapen).Items.Single(item => item.Name == "Slaapzak").Period.ShouldBe(QuantityPeriod.PerTrip);
     }
@@ -94,13 +93,42 @@ public sealed class CatalogSeedDataTests
         => CatalogSeedData.PerHead.Keys.ShouldAllBe(key => CategoryNamed(key.Category).Items.Any(item => item.Name == key.Item));
 
     [Fact]
-    public void Only_the_per_head_items_carry_a_quantity()
-    {
-        List<SeedItem> withQuantity = [.. CatalogSeedData.Categories.SelectMany(category => category.Items).Where(item => item.Quantity is not null)];
+    public void Every_seeded_item_carries_a_quantity()
+        => CatalogSeedData.Categories.SelectMany(category => category.Items).ShouldAllBe(item => item.Quantity >= 1);
 
-        withQuantity.Count.ShouldBe(CatalogSeedData.PerHead.Count);
-        CategoryNamed(CatalogSeedData.Kampeerkeuken).Items.Single(item => item.Name == "Pannen").Quantity.ShouldBeNull();
+    [Fact]
+    public void Every_seeded_item_has_exactly_one_rule()
+    {
+        List<(string Category, string Item)> items =
+            [.. CatalogSeedData.Categories.SelectMany(category => category.Items.Select(item => (category.Name, item.Name)))];
+
+        CatalogSeedData.PerHead.Keys.Intersect(CatalogSeedData.SeedRules.Keys).ShouldBeEmpty();
+        CatalogSeedData.PerHead.Keys.Concat(CatalogSeedData.SeedRules.Keys).Order().ShouldBe(items.Order());
     }
+
+    [Theory]
+    [InlineData(CatalogSeedData.Tent, "Haringen", 30, null, QuantityBasis.Fixed, QuantityPeriod.PerTrip)]
+    [InlineData(CatalogSeedData.Tent, "Tent + pomp", 1, null, QuantityBasis.Fixed, QuantityPeriod.PerTrip)]
+    [InlineData(CatalogSeedData.Kampeerkeuken, "Pannen", 3, null, QuantityBasis.Fixed, QuantityPeriod.PerTrip)]
+    [InlineData(CatalogSeedData.Kleding, "T-shirts", 1, null, QuantityBasis.PerAdult, QuantityPeriod.PerDay)]
+    [InlineData(CatalogSeedData.KamperenAlgemeen, "WC-papier", 1, "rol", QuantityBasis.Fixed, QuantityPeriod.PerDay)]
+    [InlineData(CatalogSeedData.Toiletartikelen, "Shampoo", 1, "fles", QuantityBasis.Fixed, QuantityPeriod.PerTrip)]
+    [InlineData(CatalogSeedData.KinderenKleding, "Truien", 2, null, QuantityBasis.PerChild, QuantityPeriod.PerTrip)]
+    [InlineData(CatalogSeedData.VervoerZonderAuto, "Rugzakken", 1, null, QuantityBasis.PerPerson, QuantityPeriod.PerTrip)]
+    public void Remaining_items_carry_a_fitting_rule(string category, string name, int quantity, string? unit, QuantityBasis basis, QuantityPeriod period)
+    {
+        SeedItem item = CategoryNamed(category).Items.Single(item => item.Name == name);
+
+        item.Quantity.ShouldBe(quantity);
+        item.Unit.ShouldBe(unit);
+        item.Basis.ShouldBe(basis);
+        item.Period.ShouldBe(period);
+    }
+
+    [Fact]
+    public void Every_seeded_rule_is_a_valid_amount()
+        => CatalogSeedData.Categories.SelectMany(category => category.Items)
+            .ShouldAllBe(item => Amount.Create(item.Quantity, item.Unit, item.Basis, item.Period) != null);
 
     [Fact]
     public void Ids_derive_from_the_seed_names()

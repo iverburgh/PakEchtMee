@@ -73,6 +73,20 @@ public sealed class CatalogSeederTests(SqlServerTestContainerFixture server)
     }
 
     [Fact]
+    public async Task Units_are_stored()
+    {
+        Func<CatalogDbContext> createContext = await NewDatabaseAsync();
+
+        await SeedAsync(createContext);
+
+        await using CatalogDbContext context = createContext();
+        CatalogItem toiletPaper = await context.Items.SingleAsync(
+            item => item.Id == CatalogSeedData.ItemId(CatalogSeedData.KamperenAlgemeen, "WC-papier"),
+            CancellationToken);
+        toiletPaper.Amount.ShouldBe(Amount.Create(1, "rol", QuantityBasis.Fixed, QuantityPeriod.PerDay));
+    }
+
+    [Fact]
     public async Task A_second_run_inserts_nothing()
     {
         Func<CatalogDbContext> createContext = await NewDatabaseAsync();
